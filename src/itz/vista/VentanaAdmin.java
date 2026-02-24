@@ -1,7 +1,13 @@
 package itz.vista;
 
+import itz.controlador.ControladorAlumno;
+import itz.modelo.Alumno;
+
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.io.*;
+import java.util.ArrayList;
 
 /**
  *
@@ -17,6 +23,11 @@ public class VentanaAdmin extends JFrame {
     JButton btnAlumnos = new JButton("Abrir");
     JButton btnProfesores = new JButton("Abrir");
     JButton btnMaterias = new JButton("Abrir");
+    private JScrollPane scrollAlumnos;
+    private DefaultTableModel modelo;
+    private JTable tablaAlumnos;
+    private ArrayList<Alumno> listaEstudiantes = new ArrayList<>();
+    private final String nombreArchivo = "estudiantes.dat";
 
     public VentanaAdmin() {
         //Atributos de la vetana
@@ -50,8 +61,8 @@ public class VentanaAdmin extends JFrame {
         ventanaAa.add(btnProfesores);
         ventanaAa.add(btnMaterias);
         btnAlumnos.addActionListener(e -> {
-            JOptionPane.showMessageDialog(null, "Alumnos");
-
+            ControladorAlumno contrAlumno = new ControladorAlumno();
+            contrAlumno.setVisible(true);
         });//Fin del action listener
 
         btnProfesores.addActionListener(e -> {
@@ -67,6 +78,7 @@ public class VentanaAdmin extends JFrame {
         foto.setBounds(320, 90, 210, 210);
         foto.setBackground(Color.WHITE);
         ventanaAa.add(foto);
+
     }//Fin del constructor
 
     class PruebaFoto extends JPanel {
@@ -94,4 +106,5 @@ public class VentanaAdmin extends JFrame {
             g.fillPolygon(xPoints, yPoints, 3);
         }//Fin de la foto
     }//Fin del metodo grafics
+
 }//Fin de la clase
