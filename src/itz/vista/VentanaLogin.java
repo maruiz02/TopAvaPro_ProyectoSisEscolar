@@ -1,104 +1,125 @@
 package itz.vista;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
-/**
- *
- * @author marco
- */
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
 
 public class VentanaLogin extends JFrame {
-    //Declaraciones
-    JFrame ventana = new JFrame();
-    JLabel lblUsario = new JLabel("Usuario");
-    JLabel lblContra = new JLabel("Contraseña");
-    JTextField txtUsuario = new JTextField();
-    JPasswordField txtContra = new JPasswordField();
-    JButton btnLogin = new JButton("Login");
+
+    private JTextField txtUsuario;
+    private JPasswordField txtContra;
+    private JButton btnLogin;
+
+    // Colores del tema
+    private final Color AZUL_MODERNO = new Color(63, 81, 181);
+    private final Color AZUL_HOVER = new Color(48, 63, 159);
+    private final Color FONDO_GRIS = new Color(240, 242, 245);
 
     public VentanaLogin() {
-        //Atributos de la ventana
-        ventana.setTitle("LOGIN");
-        ventana.setBounds(0, 0, 400, 450);
-        ventana.setLocationRelativeTo(null);
-        ventana.setLayout(null);
-        ventana.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setTitle("Acceso al Sistema - ITZ");
+        setSize(450, 500);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        
+        // Panel Principal con fondo gris claro
+        JPanel panelPrincipal = new JPanel(new GridBagLayout());
+        panelPrincipal.setBackground(FONDO_GRIS);
+        
+        // Tarjeta Blanca Central
+        JPanel card = new JPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
+            new EmptyBorder(30, 40, 40, 40)
+        ));
 
-        //Labels
-        lblUsario.setBounds(50, 30, 200, 30);
-        ventana.add(lblUsario);
-        lblContra.setBounds(50, 110, 200, 30);
-        ventana.add(lblContra);
+        // COMPONENTES 
+        
+        // Icono o Título
+        JLabel lblTitulo = new JLabel("BIENVENIDO");
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTitulo.setForeground(AZUL_MODERNO);
+        lblTitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        //Cuadros de texto
-        txtUsuario.setBounds(50, 60, 300, 30);
-        ventana.add(txtUsuario);
-        txtContra.setBounds(50, 140, 300, 30);
-        ventana.add(txtContra);
+        // Campo Usuario
+        JLabel lblUser = new JLabel("Usuario / Matrícula");
+        lblUser.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblUser.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        txtUsuario = crearTextFieldPersonalizado();
 
-        //Botones
-        btnLogin.setBounds(100, 220, 200, 40);
-        ventana.add(btnLogin);
-        btnLogin.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String user = txtUsuario.getText().toUpperCase().trim();
-                String contra = new String(txtContra.getPassword());
-                switch (user) {
-                    case "PROFESOR":
-                        if (contra.equals("123")) {
-                            AbrirVentanaProfesor();
-                        }//Fin del if
-                        else {
-                            JOptionPane.showMessageDialog(null,"ERROR!","Credeciales Invalidas!", JOptionPane.WARNING_MESSAGE);
-                        }//Fin del esle
-                        break;
-                    case "ALUMNO":
-                        if (contra.equals("321")) {
-                            AbrirVentanaAlumno();
-                        }//Fin del if
-                        else {
-                            JOptionPane.showMessageDialog(null,"ERROR!","Credeciales Invalidas!", JOptionPane.WARNING_MESSAGE);
-                        }//Fin del else
-                        break;
-                    case "ADMIN":
-                        if (contra.equals("ABC")) {
-                            AbrirVentanaAdmin();
-                        }//Fin del if
-                        else {
-                            JOptionPane.showMessageDialog(null,"ERROR!","Credeciales Invalidas!", JOptionPane.WARNING_MESSAGE);
-                        }//Fin del else
-                        break;
-                    default:
-                        JOptionPane.showMessageDialog(null,"ERROR!","Credeciales Invalidas!", JOptionPane.WARNING_MESSAGE);
-                        break;
-                }//Fin del switch
-            }//Fin del action performed
-        });//Fiin del action listener
-        ventana.setVisible(true);
-    }//Fin del constructor
-    public void AbrirVentanaProfesor() {
-        VentanaProfesor ventanaP = new VentanaProfesor();
-        ventanaP.setVisible(true);
-        this.dispose();
-    }//Fin del metodo abrir ventana Profesor
+        // Campo Contraseña
+        JLabel lblPass = new JLabel("Contraseña");
+        lblPass.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        lblPass.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        txtContra = new JPasswordField();
+        estilizarCampo(txtContra);
 
-    public void AbrirVentanaAlumno() {
-        VentanaAlumno ventanaA = new VentanaAlumno();
-        ventanaA.setVisible(true);
-        this.dispose();
-    }//Fin del metodo abrir ventana alumno
+        // Botón Login
+        btnLogin = new JButton("Iniciar Sesión");
+        estilizarBoton(btnLogin);
 
-    public void AbrirVentanaAdmin() {
-        VentanaAdmin ventanaAa = new VentanaAdmin();
-        ventanaAa.setVisible(true);
-        this.dispose();
-    }//Fin del metodo abrir ventana admin
+        //  ARMADO DE LA TARJETA
+        card.add(lblTitulo);
+        card.add(Box.createRigidArea(new Dimension(0, 30)));
+        card.add(lblUser);
+        card.add(Box.createRigidArea(new Dimension(0, 5)));
+        card.add(txtUsuario);
+        card.add(Box.createRigidArea(new Dimension(0, 20)));
+        card.add(lblPass);
+        card.add(Box.createRigidArea(new Dimension(0, 5)));
+        card.add(txtContra);
+        card.add(Box.createRigidArea(new Dimension(0, 35)));
+        card.add(btnLogin);
 
-    static void main(String[] args) {//Por el momento
-        VentanaLogin ventana = new VentanaLogin();
-        ventana.setVisible(true);
-    }//Fin del metodo main
-}//Fin de la clase
+        // Agregar tarjeta al centro
+        panelPrincipal.add(card);
+        add(panelPrincipal);
+    }
+
+    // MÉTODOS DE ESTILO 
+
+    private JTextField crearTextFieldPersonalizado() {
+        JTextField tf = new JTextField();
+        estilizarCampo(tf);
+        return tf;
+    }
+
+    private void estilizarCampo(JTextField field) {
+        field.setMaximumSize(new Dimension(350, 40));
+        field.setPreferredSize(new Dimension(300, 40));
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        field.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200), 1),
+            new EmptyBorder(5, 10, 5, 10)
+        ));
+    }
+
+    private void estilizarBoton(JButton btn) {
+        btn.setMaximumSize(new Dimension(350, 45));
+        btn.setPreferredSize(new Dimension(300, 45));
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        btn.setForeground(Color.WHITE);
+        btn.setBackground(AZUL_MODERNO);
+        btn.setFocusPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder());
+
+        btn.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btn.setBackground(AZUL_HOVER);
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btn.setBackground(AZUL_MODERNO);
+            }
+        });
+    }
+
+    // Getters necesarios para el controlador
+    public JTextField getTxtUsuario() { return txtUsuario; }
+    public JPasswordField getTxtContra() { return txtContra; }
+    public JButton getBtnLogin() { return btnLogin; }
+}
