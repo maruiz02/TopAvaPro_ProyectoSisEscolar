@@ -2,27 +2,33 @@ package itz.modelo;
 
 import java.io.Serializable;
 
-public class Usuario implements Serializable {
+public abstract class Usuario implements Serializable{
+    
+    //Declaracion de variables 
+    private static final long serialVersionUID = 1L;
+    protected int id;
+    protected String nombre;
+    protected String correo;
+    protected String password;
 
-    private String usuario;      // será la matrícula si es alumno
-    private String contrasena;
-    private String rol;
-
-    public Usuario(String usuario, String contrasena, String rol) {
-        this.usuario = usuario;
-        this.contrasena = contrasena;
-        this.rol = rol;
+    //Constructor
+    public Usuario(int id, String nombre, String correo, String password) {
+        this.id = id;
+        this.nombre = nombre;
+        this.correo = correo;
+        this.password = password;
     }
-
-    public String getUsuario() {
-        return usuario;
+    
+    //Getters
+    public String getCorreo() { 
+        return correo; 
     }
-
-    public String getContrasena() {
-        return contrasena;
+    
+    public String getPassword() { 
+        return password; 
     }
-
-    public String getRol() {
-        return rol;
+    
+    public String getNombre() { 
+        return nombre; 
     }
-}
+}//Fin de la clase

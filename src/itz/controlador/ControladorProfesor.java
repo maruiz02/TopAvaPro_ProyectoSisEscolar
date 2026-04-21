@@ -1,64 +1,170 @@
 package itz.controlador;
 
-import itz.modelo.Alumno;
-
-import java.io.*;
-import java.util.ArrayList;
+import itz.modelo.*;
+import itz.vista.VentanaProfesor;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 
 public class ControladorProfesor {
 
-    private final String ARCHIVO_CALIF = "calificaciones.dat";
-    private ArrayList<String> listaCalificaciones;
+    //Declaracion de variables
+    private VentanaProfesor vista;
+    private SistemaEscolar sistema;
+    private Profesor profesor;
 
-    public ControladorProfesor() {
-        listaCalificaciones = cargarCalificaciones();
+    public ControladorProfesor(VentanaProfesor vista, SistemaEscolar sistema, Profesor profesor) {
+        this.vista = vista;
+        this.sistema = sistema;
+        this.profesor = profesor;
+        init();
     }
 
-    public void registrarCalificacion(String noControl,
-                                       String materia,
-                                       double calificacion) {
-
-        String registro = noControl + "," + materia + "," + calificacion;
-        listaCalificaciones.add(registro);
-        guardarCalificaciones();
+    //Visualizar materias y horarios
+    private void init() {
+        cargarMateriasCombo();
+        cargarTablaHorario();
+        cargarTablaMisMaterias();
+        vista.comboMaterias.addActionListener(e -> cargarAlumnosMateria());
+        vista.btnGuardarCalificacion.addActionListener(e -> guardarCalificacion());
     }
 
-    public ArrayList<String> obtenerCalificacionesAlumno(String noControl) {
-        ArrayList<String> resultado = new ArrayList<>();
+    //Cargar las materias     
+    private void cargarMateriasCombo() {
+        vista.comboMaterias.removeAllItems();
+        for (Materia m : profesor.getMaterias()) {
+            vista.comboMaterias.addItem(m.getNombre());
+        }//Fin for
+    }
 
-        for (String registro : listaCalificaciones) {
-            if (registro.startsWith(noControl + ",")) {
-                resultado.add(registro);
+    //Cargando horario
+    private void cargarTablaHorario() {
+        String[] col = {"Clave", "Materia", "Horario"};
+        DefaultTableModel modelo = new DefaultTableModel(col, 0) {
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
+        };
+        for (Materia m : profesor.getMaterias()) {
+            String h = (m.getHorario() != null)
+                    ? m.getHorario().getDia() + " " + m.getHorario().getHora() : "N/A";
+            modelo.addRow(new Object[]{m.getClave(), m.getNombre(), h});
+        }//Fin for
+        vista.tablaHorario.setModel(modelo);
+    }
+
+    //Cargar materias para el profesor 
+    private void cargarTablaMisMaterias() {
+        String[] columnas = {"Materia", "Clave", "Día", "Hora", "Alumnos inscritos"};
+        DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
+        };
+        for (Materia m : profesor.getMaterias()) {
+            String dia = (m.getHorario() != null) ? m.getHorario().getDia() : "—";
+            String hora = (m.getHorario() != null) ? m.getHorario().getHora() : "—";
+            int num = m.getAlumnos() != null ? m.getAlumnos().size() : 0;
+            modelo.addRow(new Object[]{m.getNombre(), m.getClave(), dia, hora, num});
+        }//Fin for
+        vista.tablaMissMaterias.setModel(modelo);
+    }
+
+    //Cargar los alumnos asignados por materia
+    private void cargarAlumnosMateria() {
+        int idx = vista.comboMaterias.getSelectedIndex();
+        if (idx < 0) {
+            return;
+        }//Fin if 
+
+        Materia seleccionada = profesor.getMaterias().get(idx);
+        String[] cols = {"Matrícula", "Nombre", "Calificación Actual"};
+        DefaultTableModel modelo = new DefaultTableModel(cols, 0) {
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
+        };
+        for (Alumno a : seleccionada.getAlumnos()) {
+            double cal = obtenerCalificacionAlumno(a, seleccionada);
+            String calStr = cal == -1 ? "Sin calificar" : String.format("%.1f", cal);
+            modelo.addRow(new Object[]{a.getMatricula(), a.getNombre(), calStr});
+        }//Fin for 
+        vista.tablaAlumnos.setModel(modelo);
+    }
+
+    private double obtenerCalificacionAlumno(Alumno alumno, Materia materia) {
+        for (Calificacion c : alumno.getKardex().getHistorial()) {
+            if (c.getMateria().getClave().equalsIgnoreCase(materia.getClave())) {
+                return c.getValor();
+            }//Fin if 
+        }//Fin for 
+        return -1;
+    }
+
+    //Guardando la calificacion 
+    private void guardarCalificacion() {
+        int idx = vista.comboMaterias.getSelectedIndex();
+        if (idx < 0) {
+            JOptionPane.showMessageDialog(vista, "Selecciona una materia primero.");
+            return;
+        }//Fin if 
+
+        String matricula = vista.txtIdAlumno.getText().trim();
+        String calStr = vista.txtCalificacion.getText().trim();
+
+        if (matricula.isEmpty() || calStr.isEmpty()) {
+            JOptionPane.showMessageDialog(vista, "Ingresa la matrícula del alumno y la calificación.");
+            return;
+        }//Fin if 
+
+        double calValor;
+        try {
+            calValor = Double.parseDouble(calStr);
+            if (calValor < 0 || calValor > 100) {
+                JOptionPane.showMessageDialog(vista, "La calificación debe estar entre 0 y 100.");
+                return;
+            }//Fin if 
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(vista, "Calificación inválida. Usa un número (ej: 8.5)");
+            return;
+        }
+
+        Materia materia = profesor.getMaterias().get(idx);
+
+        Alumno alumnoTarget = null;
+        for (Alumno a : materia.getAlumnos()) {
+            if (a.getMatricula().equalsIgnoreCase(matricula)) {
+                alumnoTarget = a;
+                break;
             }
         }
 
-        return resultado;
-    }
-
-    private void guardarCalificaciones() {
-        try (ObjectOutputStream oos =
-                     new ObjectOutputStream(
-                             new FileOutputStream(ARCHIVO_CALIF))) {
-
-            oos.writeObject(listaCalificaciones);
-
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (alumnoTarget == null) {
+            JOptionPane.showMessageDialog(vista,
+                    "El alumno con matrícula \"" + matricula + "\" no está inscrito en esta materia.");
+            return;
         }
+
+        // Actualizar calificacion si ya existe, agregar si no
+        boolean actualizado = false;
+        for (Calificacion c : alumnoTarget.getKardex().getHistorial()) {
+            if (c.getMateria().getClave().equalsIgnoreCase(materia.getClave())) {
+                c.setValor(calValor);
+                actualizado = true;
+                break;
+            }//Fin if 
+        }//Fin for
+        if (!actualizado) {
+            alumnoTarget.getKardex().agregarCalificacion(new Calificacion(materia, calValor));
+        }//Fin ir 
+
+        sistema.guardarSistema();
+        cargarAlumnosMateria();
+        vista.txtIdAlumno.setText("");
+        vista.txtCalificacion.setText("");
+        JOptionPane.showMessageDialog(vista,
+                "Calificación " + calValor + " guardada para " + alumnoTarget.getNombre() + ".");
     }
-
-    private ArrayList<String> cargarCalificaciones() {
-        File archivo = new File(ARCHIVO_CALIF);
-        if (!archivo.exists()) return new ArrayList<>();
-
-        try (ObjectInputStream ois =
-                     new ObjectInputStream(
-                             new FileInputStream(ARCHIVO_CALIF))) {
-
-            return (ArrayList<String>) ois.readObject();
-
-        } catch (Exception e) {
-            return new ArrayList<>();
-        }
-    }
-}
+}//Fin de la clase

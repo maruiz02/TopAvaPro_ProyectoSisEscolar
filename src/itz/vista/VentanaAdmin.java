@@ -1,200 +1,215 @@
 package itz.vista;
 
-import itz.modelo.*;
-import itz.controlador.*;
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.util.List;
 
 public class VentanaAdmin extends JFrame {
 
-    private JTabbedPane pestañas;
-    private ControladorAlumno ctrlAlumno;
-    private ControladorAdmin ctrlAdmin;
-    
-    // Colores y Fuentes consistentes
-    private final Color AZUL_MODERNO = new Color(63, 81, 181);
-    private final Color AZUL_HOVER = new Color(48, 63, 159);
-    private final Font FUENTE_BOTON = new Font("Segoe UI", Font.BOLD, 13);
-    private final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 12);
+    //Declaracion de variables 
+    public JTextField txtNombre, txtCorreo, txtPassword, txtMatricula;
+    public JTextField txtNombreProfesor, txtCorreoProfesor, txtPasswordProfesor;
+    public JTextField txtNombreMateria, txtClaveMateria, txtDia, txtHora, txtClaveMateriaHorario;
+    public JTextField txtCorreoProfesorAsignar;
 
-    public VentanaAdmin(ControladorAlumno ctrlAlumno, ControladorAdmin ctrlAdmin) {
-        this.ctrlAlumno = ctrlAlumno;
-        this.ctrlAdmin = ctrlAdmin;
+    public JButton btnAsignarProfesor;
+    public JButton btnAgregarAlumno, btnEditarAlumno, btnEliminarAlumno,
+            btnAgregarProfesor, btnEditarProfesor, btnEliminarProfesor,
+            btnAgregarMateria, btnCrearHorario,
+            btnEditarMateria, btnEliminarMateria;
 
-        setTitle("Panel Maestro de Administración - ITZ");
-        setSize(950, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    public JCheckBox chkPermitirInscripcion;
+
+    public JButton btnActualizarPermiso;
+
+    public JTable tablaAlumnos, tablaProfesores, tablaMaterias;
+
+    // Panel del perfil (foto admin)
+    public PanelFoto panelFoto;
+
+    Color colorPrimario = new Color(52, 152, 219);
+    Color colorPeligro = new Color(231, 76, 60);
+    Color colorExito = new Color(46, 204, 113);
+    Color colorTexto = Color.WHITE;
+
+    //Constructor
+    public VentanaAdmin(String nombre, String correo) {
+        setTitle("Panel Administrador " + nombre);
+        setSize(1050, 720);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
+        getContentPane().setBackground(new Color(245, 245, 245));
 
-        pestañas = new JTabbedPane();
-        pestañas.setFont(FUENTE_TITULO);
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-        // Agregamos las áreas de administración con iconos de texto
-        pestañas.addTab("Alumnos", crearPanelAlumnos());
-        pestañas.addTab("Profesores", crearPanelProfesores());
-        pestañas.addTab("Usuarios", crearPanelUsuarios());
-        pestañas.addTab("Materias", crearPanelMaterias());
-        pestañas.addTab("Horarios", crearPanelHorarios());
+        // Pestana 1 -> MiPerfil
+        JPanel panelPerfil = new JPanel(new BorderLayout());
+        panelPerfil.setBackground(new Color(255, 245, 235));
 
-        add(pestañas);
+        JLabel lblTituloPerfil = new JLabel("Mi Perfil", JLabel.CENTER);
+        lblTituloPerfil.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTituloPerfil.setBorder(new EmptyBorder(15, 0, 5, 0));
+
+        panelFoto = new PanelFoto(nombre, correo, "Administrador");
+
+        JPanel centerPerfil = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        centerPerfil.setBackground(new Color(255, 245, 235));
+        centerPerfil.add(panelFoto);
+
+        panelPerfil.add(lblTituloPerfil, BorderLayout.NORTH);
+        panelPerfil.add(centerPerfil, BorderLayout.CENTER);
+
+        // Pestana 2 -> Alumnos 
+        JPanel panelAlumnos = new JPanel(new BorderLayout(10, 10));
+        panelAlumnos.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JPanel formAlumno = new JPanel(new GridLayout(9, 2, 10, 10));
+        formAlumno.setOpaque(false);
+
+        txtNombre = new JTextField();
+        txtCorreo = new JTextField();
+        txtPassword = new JPasswordField();
+        txtMatricula = new JTextField();
+
+        btnAgregarAlumno = crearBoton("Agregar Alumno", colorExito);
+        btnEditarAlumno = crearBoton("Editar Alumno", colorPrimario);
+        btnEliminarAlumno = crearBoton("Eliminar Alumno", colorPeligro);
+
+        chkPermitirInscripcion = new JCheckBox("Permitir Inscripción al alumno seleccionado");
+        chkPermitirInscripcion.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        chkPermitirInscripcion.setForeground(new Color(39, 174, 96));
+        chkPermitirInscripcion.setOpaque(false);
+
+        btnActualizarPermiso = crearBoton("Actualizar Permiso", new Color(142, 68, 173));
+
+        formAlumno.add(new JLabel("Nombre Completo:"));
+        formAlumno.add(txtNombre);
+        formAlumno.add(new JLabel("Correo:"));
+        formAlumno.add(txtCorreo);
+        formAlumno.add(new JLabel("Contraseña:"));
+        formAlumno.add(txtPassword);
+        formAlumno.add(new JLabel("Matrícula:"));
+        formAlumno.add(txtMatricula);
+        formAlumno.add(btnAgregarAlumno);
+        formAlumno.add(btnEditarAlumno);
+        formAlumno.add(new JLabel());
+        formAlumno.add(btnEliminarAlumno);
+        formAlumno.add(chkPermitirInscripcion);
+        formAlumno.add(btnActualizarPermiso);
+
+        JLabel lblInstrAlumno = new JLabel("* Selecciona una fila en la tabla "
+                + "para editar/eliminar/permisos.");
+        lblInstrAlumno.setForeground(new Color(100, 100, 100));
+        lblInstrAlumno.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        formAlumno.add(lblInstrAlumno);
+        formAlumno.add(new JLabel());
+
+        tablaAlumnos = new JTable();
+        tablaAlumnos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        panelAlumnos.add(formAlumno, BorderLayout.NORTH);
+        panelAlumnos.add(new JScrollPane(tablaAlumnos), BorderLayout.CENTER);
+
+        // Pestana 3 -> Profesores
+        JPanel panelProfesores = new JPanel(new BorderLayout(10, 10));
+        panelProfesores.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JPanel formProfesor = new JPanel(new GridLayout(6, 2, 10, 10));
+        formProfesor.setOpaque(false);
+
+        txtNombreProfesor = new JTextField();
+        txtCorreoProfesor = new JTextField();
+        txtPasswordProfesor = new JPasswordField();
+        btnAgregarProfesor = crearBoton("Agregar Profesor", colorExito);
+        btnEditarProfesor = crearBoton("Editar Profesor", colorPrimario);
+        btnEliminarProfesor = crearBoton("Eliminar Profesor", colorPeligro);
+
+        formProfesor.add(new JLabel("Nombre Profesor:"));
+        formProfesor.add(txtNombreProfesor);
+        formProfesor.add(new JLabel("Correo:"));
+        formProfesor.add(txtCorreoProfesor);
+        formProfesor.add(new JLabel("Password:"));
+        formProfesor.add(txtPasswordProfesor);
+        formProfesor.add(btnAgregarProfesor);
+        formProfesor.add(btnEditarProfesor);
+        formProfesor.add(new JLabel());
+        formProfesor.add(btnEliminarProfesor);
+        JLabel lblInstrProf = new JLabel("*Selecciona una fila en la tabla para editar/eliminar.");
+        lblInstrProf.setForeground(new Color(100, 100, 100));
+        lblInstrProf.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        formProfesor.add(lblInstrProf);
+        formProfesor.add(new JLabel());
+
+        tablaProfesores = new JTable();
+        tablaProfesores.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        panelProfesores.add(formProfesor, BorderLayout.NORTH);
+        panelProfesores.add(new JScrollPane(tablaProfesores), BorderLayout.CENTER);
+
+        // Pestana 4 -> Materias
+        JPanel panelMaterias = new JPanel(new BorderLayout(10, 10));
+        panelMaterias.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JPanel panelFormularios = new JPanel(new GridLayout(1, 2, 20, 20));
+
+        JPanel subMateria = new JPanel(new GridLayout(5, 2, 10, 10));
+        subMateria.setBorder(BorderFactory.createTitledBorder("Gestión de Materia"));
+        txtNombreMateria = new JTextField();
+        txtClaveMateria = new JTextField();
+        btnAgregarMateria = crearBoton("Guardar", colorExito);
+        btnEditarMateria = crearBoton("Editar", colorPrimario);
+        btnEliminarMateria = crearBoton("Eliminar", colorPeligro);
+        subMateria.add(new JLabel("Nombre:"));
+        subMateria.add(txtNombreMateria);
+        subMateria.add(new JLabel("Clave:"));
+        subMateria.add(txtClaveMateria);
+        subMateria.add(btnAgregarMateria);
+        subMateria.add(btnEditarMateria);
+        subMateria.add(new JLabel());
+        subMateria.add(btnEliminarMateria);
+
+        JPanel subHorario = new JPanel(new GridLayout(7, 2, 10, 10));
+        subHorario.setBorder(BorderFactory.createTitledBorder("Horario y Asignación"));
+        txtClaveMateriaHorario = new JTextField();
+        txtDia = new JTextField();
+        txtHora = new JTextField();
+        txtCorreoProfesorAsignar = new JTextField();
+        btnCrearHorario = crearBoton("Establecer Horario", colorPrimario);
+        btnAsignarProfesor = crearBoton("Asignar a Profesor", colorExito);
+        subHorario.add(new JLabel("Clave Materia:"));
+        subHorario.add(txtClaveMateriaHorario);
+        subHorario.add(new JLabel("Día:"));
+        subHorario.add(txtDia);
+        subHorario.add(new JLabel("Hora:"));
+        subHorario.add(txtHora);
+        subHorario.add(new JLabel());
+        subHorario.add(btnCrearHorario);
+        subHorario.add(new JLabel("Correo Profesor:"));
+        subHorario.add(txtCorreoProfesorAsignar);
+        subHorario.add(new JLabel());
+        subHorario.add(btnAsignarProfesor);
+
+        panelFormularios.add(subMateria);
+        panelFormularios.add(subHorario);
+
+        tablaMaterias = new JTable();
+        panelMaterias.add(panelFormularios, BorderLayout.NORTH);
+        panelMaterias.add(new JScrollPane(tablaMaterias), BorderLayout.CENTER);
+
+        // Agregando Pestanas
+        tabs.addTab("Mi Perfil", panelPerfil);
+        tabs.addTab("Alumnos", panelAlumnos);
+        tabs.addTab("Profesores", panelProfesores);
+        tabs.addTab("Materias y Horarios", panelMaterias);
+        add(tabs);
     }
 
-    //MÉTODO PARA CREAR BOTONES ESTILIZADOS 
-    private JButton crearBotonModerno(String texto) {
-        JButton btn = new JButton(texto);
-        btn.setFont(FUENTE_BOTON);
-        btn.setForeground(Color.WHITE);
-        btn.setBackground(AZUL_MODERNO);
-        btn.setFocusPainted(false);
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btn.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
-
-        btn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                btn.setBackground(AZUL_HOVER);
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                btn.setBackground(AZUL_MODERNO);
-            }
-        });
-        return btn;
+    //Creando botones
+    private JButton crearBoton(String texto, Color colorFondo) {
+        JButton boton = new JButton(texto);
+        boton.setForeground(colorTexto);
+        boton.setBackground(colorFondo);
+        boton.setFocusPainted(false);
+        boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return boton;
     }
-
-    // PANEL ALUMNOS 
-    private JPanel crearPanelAlumnos() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
-        DefaultTableModel modelo = new DefaultTableModel(new String[]{"Matrícula", "Nombre", "Correo"}, 0);
-        JTable tabla = estilizarTabla(new JTable(modelo));
-
-        List<Alumno> lista = ctrlAlumno.obtenerAlumnos();
-        if (lista != null) {
-            for (Alumno a : lista) {
-                modelo.addRow(new Object[]{a.getMatricula(), a.getNombre(), a.getCorreo()});
-            }
-        }
-
-        JButton btnAdd = crearBotonModerno("Registrar Nuevo Alumno");
-        
-        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
-        panel.add(envolverBoton(btnAdd), BorderLayout.SOUTH);
-        return panel;
-    }
-
-    // PANEL PROFESORES 
-    private JPanel crearPanelProfesores() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
-        DefaultTableModel modelo = new DefaultTableModel(new String[]{"ID", "Nombre"}, 0);
-        JTable tabla = estilizarTabla(new JTable(modelo));
-        
-        JButton btnAdd = crearBotonModerno("Agregar Profesor");
-        btnAdd.addActionListener(e -> {
-            String id = JOptionPane.showInputDialog("ID:");
-            String nom = JOptionPane.showInputDialog("Nombre:");
-            if(id != null && nom != null) modelo.addRow(new Object[]{id, nom});
-        });
-
-        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
-        panel.add(envolverBoton(btnAdd), BorderLayout.SOUTH);
-        return panel;
-    }
-
-    //PANEL USUARIOS
-    private JPanel crearPanelUsuarios() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
-        DefaultTableModel modelo = new DefaultTableModel(new String[]{"Usuario", "Rol"}, 0);
-        JTable tabla = estilizarTabla(new JTable(modelo));
-        
-        if (ctrlAdmin.getListaUsuarios() != null) {
-            for (Usuario u : ctrlAdmin.getListaUsuarios()) {
-                modelo.addRow(new Object[]{u.getUsuario(), u.getRol()});
-            }
-        }
-
-        JButton btnNuevoU = crearBotonModerno("Crear Nuevo Usuario");
-        btnNuevoU.addActionListener(e -> {
-            String user = JOptionPane.showInputDialog("Nombre de usuario:");
-            String pass = JOptionPane.showInputDialog("Contraseña:");
-            String[] roles = {"ADMIN", "ALUMNO", "PROFESOR"};
-            String rol = (String) JOptionPane.showInputDialog(null, "Rol:", "Roles", 1, null, roles, roles[0]);
-
-            if (rol != null && ctrlAdmin.registrarUsuario(user, pass, rol).equals("OK")) {
-                modelo.addRow(new Object[]{user, rol});
-            }
-        });
-
-        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
-        panel.add(envolverBoton(btnNuevoU), BorderLayout.SOUTH);
-        return panel;
-    }
-
-    // PANEL MATERIAS 
-    private JPanel crearPanelMaterias() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        
-        DefaultTableModel modelo = new DefaultTableModel(new String[]{"Materia", "Horario", "Profesor"}, 0);
-        JTable tabla = estilizarTabla(new JTable(modelo));
-        
-        JButton btnAdd = crearBotonModerno("Nueva Materia");
-        btnAdd.addActionListener(e -> {
-            String nom = JOptionPane.showInputDialog("Nombre Materia:");
-            String hor = JOptionPane.showInputDialog("Horario:");
-            if(nom != null) modelo.addRow(new Object[]{nom, hor, "Sin asignar"});
-        });
-
-        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
-        panel.add(envolverBoton(btnAdd), BorderLayout.SOUTH);
-        return panel;
-    }
-
-    // PANEL CONSULTA DE HORARIOS
-    private JPanel crearPanelHorarios() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
-        
-        JPanel busqueda = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JTextField txtId = new JTextField(15);
-        JButton btnBus = crearBotonModerno("Ver Horario");
-        
-        busqueda.add(new JLabel("ID / Matrícula: "));
-        busqueda.add(txtId);
-        busqueda.add(btnBus);
-        
-        JTextArea res = new JTextArea(10, 30);
-        res.setFont(new Font("Consolas", Font.PLAIN, 14));
-        res.setEditable(false);
-        res.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-        
-        btnBus.addActionListener(e -> res.setText("Consultando horario para: " + txtId.getText() + "...\n(Datos cargados de materias.dat)"));
-
-        panel.add(busqueda, BorderLayout.NORTH);
-        panel.add(new JScrollPane(res), BorderLayout.CENTER);
-        return panel;
-    }
-
-    //MÉTODOS DE ESTILIZADO EXTRA 
-    private JTable estilizarTabla(JTable tabla) {
-        tabla.setRowHeight(25);
-        tabla.setSelectionBackground(new Color(232, 234, 246));
-        tabla.setSelectionForeground(Color.BLACK);
-        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
-        tabla.getTableHeader().setBackground(Color.WHITE);
-        return tabla;
-    }
-
-    private JPanel envolverBoton(JButton btn) {
-        JPanel pnl = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        pnl.setBorder(new EmptyBorder(10, 0, 0, 0));
-        pnl.add(btn);
-        return pnl;
-    }
-}
+}//FIn de la clase

@@ -3,22 +3,27 @@ package itz.modelo;
 import java.io.Serializable;
 
 public class Calificacion implements Serializable {
-
-    private String matricula;
-    private String materia;
-    private double calificacion;
-
-    public Calificacion(String matricula, String materia, double calificacion) {
-        this.matricula = matricula;
+    //Declaracion de variables
+    private static final long serialVersionUID = 1L;
+    private Materia materia;
+    private double valor;
+    
+    //Constructor
+    public Calificacion(Materia materia, double valor) {
         this.materia = materia;
-        this.calificacion = calificacion;
+        this.valor = valor;
     }
 
-    public String getMatricula() { return matricula; }
-    public String getMateria() { return materia; }
-    public double getCalificacion() { return calificacion; }
-
-    public void setCalificacion(double calificacion) {
-        this.calificacion = calificacion;
+    // Getters
+    public double getValor() { 
+        return valor; 
     }
-}
+    public Materia getMateria() { 
+        return materia; 
+    }
+
+    // Setter
+    public void setValor(double valor) { 
+        this.valor = valor;
+    }
+}//Fin de la clase 

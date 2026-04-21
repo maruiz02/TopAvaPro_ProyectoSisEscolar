@@ -1,60 +1,75 @@
 package itz.modelo;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
 
 public class Alumno implements Serializable {
 
-    private String nombre;
-    private String matricula;
-    private String correo;
+    //Declaracion de variables
+    private static final long serialVersionUID = 1L;
+    private String nombre, correo, password, matricula;
+    private ArrayList<Materia> materias;
+    private Kardex kardex;
+    private boolean inscripcionPermitida = false;
 
-    private List<Materia> materiasInscritas;
-    private Map<String, Double> historialCalificaciones;
-
-    public Alumno(String nombre, String matricula, String correo) {
+    //Constructor
+    public Alumno(String nombre, String correo, String password, String matricula) {
         this.nombre = nombre;
-        this.matricula = matricula;
         this.correo = correo;
-        this.materiasInscritas = new ArrayList<>();
-        this.historialCalificaciones = new HashMap<>();
+        this.password = password;
+        this.matricula = matricula;
+        this.materias = new ArrayList<>();
+        this.kardex = new Kardex();
+        this.inscripcionPermitida = false;
     }
 
-    public String getNombre() { return nombre; }
-    public String getMatricula() { return matricula; }
-    public String getCorreo() { return correo; }
-
-    public void setNombre(String nombre) { this.nombre = nombre; }
-    public void setMatricula(String matricula) { this.matricula = matricula; }
-    public void setCorreo(String correo) { this.correo = correo; }
-
-    public List<Materia> getMateriasInscritas() {
-        return materiasInscritas;
+    // Getters
+    public String getNombre() {
+        return nombre;
     }
 
-    public Map<String, Double> getHistorialCalificaciones() {
-        return historialCalificaciones;
+    public String getCorreo() {
+        return correo;
     }
 
-    public void agregarMateria(Materia materia) {
-        materiasInscritas.add(materia);
+    public String getPassword() {
+        return password;
     }
 
-    public void registrarCalificacion(String nombreMateria, double calificacion) {
-        historialCalificaciones.put(nombreMateria, calificacion);
+    public String getMatricula() {
+        return matricula;
     }
 
-    public boolean puedeInscribirse(String nombreMateria) {
-
-        if (historialCalificaciones.containsKey(nombreMateria)) {
-
-            double calificacion = historialCalificaciones.get(nombreMateria);
-
-            if (calificacion >= 70) {
-                return false;
-            }
-        }
-
-        return true;
+    public ArrayList<Materia> getMaterias() {
+        return materias;
     }
-}
+
+    public Kardex getKardex() {
+        return kardex;
+    }
+
+    public boolean isInscripcionPermitida() {
+        return inscripcionPermitida;
+    }
+
+    // Setters
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public void setCorreo(String correo) {
+        this.correo = correo;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setMatricula(String matricula) {
+        this.matricula = matricula;
+    }
+
+    public void setInscripcionPermitida(boolean inscripcionPermitida) {
+        this.inscripcionPermitida = inscripcionPermitida;
+    }
+}//Fin de la clase
