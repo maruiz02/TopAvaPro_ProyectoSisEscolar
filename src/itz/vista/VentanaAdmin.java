@@ -18,6 +18,10 @@ public class VentanaAdmin extends JFrame {
             btnAgregarMateria, btnCrearHorario,
             btnEditarMateria, btnEliminarMateria;
 
+    // ── Botones de reportes (multihilo) ──────────────────────────────────────
+    public JButton btnGenerarBoletinAdmin;   // Boletín del alumno seleccionado
+    public JButton btnReportesLote;          // Genera reportes de todos los alumnos
+
     public JCheckBox chkPermitirInscripcion;
 
     public JButton btnActualizarPermiso;
@@ -107,8 +111,18 @@ public class VentanaAdmin extends JFrame {
 
         tablaAlumnos = new JTable();
         tablaAlumnos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        // Botón de boletín individual — va debajo de la tabla de alumnos
+        btnGenerarBoletinAdmin = crearBoton("📄 Generar Boletín del Alumno Seleccionado",
+                new Color(41, 128, 185));
+
+        JPanel panelBtnBoletin = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        panelBtnBoletin.setOpaque(false);
+        panelBtnBoletin.add(btnGenerarBoletinAdmin);
+
         panelAlumnos.add(formAlumno, BorderLayout.NORTH);
         panelAlumnos.add(new JScrollPane(tablaAlumnos), BorderLayout.CENTER);
+        panelAlumnos.add(panelBtnBoletin, BorderLayout.SOUTH);
 
         // Pestana 3 -> Profesores
         JPanel panelProfesores = new JPanel(new BorderLayout(10, 10));
@@ -195,11 +209,54 @@ public class VentanaAdmin extends JFrame {
         panelMaterias.add(panelFormularios, BorderLayout.NORTH);
         panelMaterias.add(new JScrollPane(tablaMaterias), BorderLayout.CENTER);
 
+        // Pestaña 5 -> Reportes (multihilo)
+        JPanel panelReportes = new JPanel(new BorderLayout(10, 10));
+        panelReportes.setBorder(new EmptyBorder(30, 30, 30, 30));
+        panelReportes.setBackground(new Color(245, 250, 255));
+
+        JLabel lblTituloReportes = new JLabel("📊  Centro de Reportes — Generación Paralela",
+                JLabel.CENTER);
+        lblTituloReportes.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTituloReportes.setForeground(new Color(39, 174, 96));
+        lblTituloReportes.setBorder(new EmptyBorder(0, 0, 20, 0));
+
+        JTextArea descripcion = new JTextArea(
+                "  ⚡  Generación en LOTE\n\n" +
+                "  Genera boletines de calificaciones para TODOS los alumnos\n" +
+                "  registrados de forma simultánea usando programación multihilo.\n\n" +
+                "  • Los PDFs se guardan en la carpeta /reportes/ del proyecto.\n" +
+                "  • El sistema usa un pool de 4 hilos en paralelo.\n" +
+                "  • La ventana no se congela durante la generación.\n" +
+                "  • Para el boletín de un alumno individual, ve a la pestaña\n" +
+                "    \"Alumnos\", selecciónalo en la tabla y usa el botón azul."
+        );
+        descripcion.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        descripcion.setEditable(false);
+        descripcion.setBackground(new Color(236, 240, 241));
+        descripcion.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(189, 195, 199)),
+                BorderFactory.createEmptyBorder(15, 15, 15, 15)));
+
+        btnReportesLote = crearBoton(
+                "⚡  Generar Boletines de TODOS los Alumnos (Multihilo)",
+                new Color(39, 174, 96));
+        btnReportesLote.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnReportesLote.setPreferredSize(new Dimension(400, 50));
+
+        JPanel panelBtnLote = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        panelBtnLote.setOpaque(false);
+        panelBtnLote.add(btnReportesLote);
+
+        panelReportes.add(lblTituloReportes, BorderLayout.NORTH);
+        panelReportes.add(descripcion, BorderLayout.CENTER);
+        panelReportes.add(panelBtnLote, BorderLayout.SOUTH);
+
         // Agregando Pestanas
         tabs.addTab("Mi Perfil", panelPerfil);
         tabs.addTab("Alumnos", panelAlumnos);
         tabs.addTab("Profesores", panelProfesores);
         tabs.addTab("Materias y Horarios", panelMaterias);
+        tabs.addTab("Reportes", panelReportes);
         add(tabs);
     }
 

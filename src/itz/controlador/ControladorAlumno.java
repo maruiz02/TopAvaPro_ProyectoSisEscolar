@@ -1,6 +1,7 @@
 package itz.controlador;
 
 import itz.modelo.*;
+import itz.reporte.ServicioReportes;
 import itz.vista.VentanaAlumno;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;

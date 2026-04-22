@@ -1,6 +1,7 @@
 package itz.controlador;
 
 import itz.modelo.*;
+import itz.reporte.ServicioReportes;
 import itz.vista.VentanaAdmin;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -18,6 +19,10 @@ public class ControladorAdmin {
         vista.btnAgregarAlumno.addActionListener(e -> agregarAlumno());
         vista.btnEditarAlumno.addActionListener(e -> editarAlumno());
         vista.btnEliminarAlumno.addActionListener(e -> eliminarAlumno());
+
+        // ── Botones de reportes ─────────────────────────────────────────────
+        vista.btnGenerarBoletinAdmin.addActionListener(e -> generarBoletinAlumnoSeleccionado());
+        vista.btnReportesLote.addActionListener(e -> generarTodosLosReportes());
         vista.btnActualizarPermiso.addActionListener(e -> actualizarPermisoInscripcion());
 
         vista.btnAgregarProfesor.addActionListener(e -> agregarProfesor());
@@ -294,7 +299,6 @@ public class ControladorAdmin {
         vista.tablaProfesores.setModel(modelo);
     }
 
-    // ===================================================
     // Parte de las materias
     private void agregarMateria() {
         //Declaracion de variables
@@ -361,6 +365,41 @@ public class ControladorAdmin {
         sistema.guardarSistema();
         JOptionPane.showMessageDialog(vista, "Materia asignada al profesor correctamente.");
     }
+    //Reportes usando multihilos
+    //Genera el boletin para el alumno seleccionado
+
+    private void generarBoletinAlumnoSeleccionado() {
+        int fila = vista.tablaAlumnos.getSelectedRow();
+        if (fila < 0) {
+            JOptionPane.showMessageDialog(vista, "Selecciona un alumno de la tabla primero.");
+            return;
+        }//Fin if
+        String matricula = (String) vista.tablaAlumnos.getValueAt(fila, 3);
+        Alumno seleccionado = null;
+        for (Alumno a : sistema.getAlumnos()) {
+            if (a.getMatricula().equalsIgnoreCase(matricula)) {
+                seleccionado = a;
+                break;
+            }//Fin if
+        }//Fin for
+        if (seleccionado == null) {
+            return;
+        }//Fin if
+        ServicioReportes.generarBoletinAsync(seleccionado, vista.tablaAlumnos);
+    }
+
+    //Genera boletines para TODOS los alumnos en paralelo.
+    //Con 4 hilos en el pool: los primeros 4 alumnos se procesan
+    // simultáneamente, luego los siguientes 4, y así sucesivamente.
+    private void generarTodosLosReportes() {
+        int confirmacion = JOptionPane.showConfirmDialog(vista,
+                "Se generarán boletines para " + sistema.getAlumnos().size()
+                + " alumnos de forma paralela.\n¿Continuar?",
+                "Generación en lote", JOptionPane.YES_NO_OPTION);
+        if (confirmacion == JOptionPane.YES_OPTION) {
+            ServicioReportes.generarReportesLoteAsync(sistema, vista.tablaAlumnos);
+        }//Fin if
+    }
 
     public void cargarTablaMaterias() {
         DefaultTableModel modelo = new DefaultTableModel(new String[]{"Nombre", "Clave", "Horario"}, 0) {
@@ -373,7 +412,7 @@ public class ControladorAdmin {
             String h = (m.getHorario() != null)
                     ? m.getHorario().getDia() + " " + m.getHorario().getHora() : "Sin horario";
             modelo.addRow(new Object[]{m.getNombre(), m.getClave(), h});
-        }
+        }//Fin for
         vista.tablaMaterias.setModel(modelo);
     }
 }//Fin de la clase
