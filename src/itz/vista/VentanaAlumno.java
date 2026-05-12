@@ -38,6 +38,8 @@ public class VentanaAlumno extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         getContentPane().setBackground(new Color(245, 245, 245));
+        
+        itz.App.cambiarIcono(this);
 
         JTabbedPane tabs = new JTabbedPane();
         tabs.setFont(new Font("Segoe UI", Font.BOLD, 14));
