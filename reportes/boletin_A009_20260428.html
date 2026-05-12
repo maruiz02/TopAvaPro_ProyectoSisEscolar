@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Boletín de Calificaciones — Naomi Delgado</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f8; }
+  .contenedor { max-width: 850px; margin: 30px auto; background: white;
+                border-radius: 8px; overflow: hidden;
+                box-shadow: 0 4px 20px rgba(0,0,0,.15); }
+  .encabezado { background: linear-gradient(135deg, #2980b9, #1a5276);
+                color: white; padding: 25px 30px; }
+  .encabezado h1 { font-size: 22px; margin-bottom: 4px; }
+  .encabezado h2 { font-size: 14px; font-weight: 400; opacity: .85; }
+  .cuerpo { padding: 30px; }
+  .datos { display: grid; grid-template-columns: 1fr 1fr;
+           gap: 8px 20px; margin-bottom: 25px; padding: 15px;
+           background: #eaf4fc; border-left: 4px solid #2980b9;
+           border-radius: 4px; }
+  .datos p { font-size: 13px; color: #34495e; }
+  .datos span { font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #34495e; color: white; padding: 10px 8px; text-align: left; }
+  tr.par td   { background: #ecf0f1; }
+  tr.impar td { background: #ffffff; }
+  td { padding: 9px 8px; border-bottom: 1px solid #dde; }
+  .aprobado  { color: #27ae60; font-weight: 700; }
+  .reprobado { color: #c0392b; font-weight: 700; }
+  .promedio { margin-top: 20px; padding: 14px 20px;
+              background: #fafafa; border-radius: 6px;
+              border: 2px solid #27ae60; }
+  .promedio h3 { font-size: 18px; color: #27ae60; }
+  .pie { padding: 15px 30px; background: #ecf0f1; font-size: 11px;
+         color: #7f8c8d; display: flex; justify-content: space-between; }
+  @media print {
+    body { background: white; }
+    .contenedor { box-shadow: none; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="contenedor">
+  <div class="encabezado">
+    <h1>🎓 Instituto Tecnológico de Zacatecas</h1>
+    <h2>Boletín Oficial de Calificaciones</h2>
+  </div>
+  <div class="cuerpo">
+    <div class="datos">
+      <p>Alumno: <span>Naomi Delgado</span></p>
+      <p>Matrícula: <span>A009</span></p>
+      <p>Correo: <span>ndelgado@itz.com</span></p>
+      <p>Fecha de emisión: <span>28 de abril de 2026</span></p>
+    </div>
+    <h3 style="margin-bottom:12px;color:#2c3e50;">📋 Calificaciones por Materia</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Materia</th><th>Clave</th>
+          <th>Calificación</th><th>Estado</th>
+        </tr>
+      </thead>
+      <tbody><tr class='par-fila'><td>1</td><td>Administracion de Redes</td><td>MAR</td><td class='aprobado'>6.0</td><td class='aprobado'>✔ APROBADO</td></tr></tbody>
+    </table>
+    <div class="promedio">
+      <h3>Promedio General: 6.00 — APROBADO</h3>
+    </div>
+  </div>
+  <div class="pie">
+    <span>Documento generado automáticamente por SisGesco · 28 de abril de 2026</span>
+    <span>Firma: ________________________</span>
+  </div>
+</div>
+</body>
+</html>

@@ -2,7 +2,9 @@ package itz.controlador;
 
 import itz.modelo.*;
 import itz.reporte.ServicioReportes;
+import itz.util.ValidadorPassword;
 import itz.vista.VentanaAdmin;
+import itz.vista.VentanaLogin;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
@@ -19,6 +21,9 @@ public class ControladorAdmin {
         vista.btnAgregarAlumno.addActionListener(e -> agregarAlumno());
         vista.btnEditarAlumno.addActionListener(e -> editarAlumno());
         vista.btnEliminarAlumno.addActionListener(e -> eliminarAlumno());
+
+        // Cerrar sesión
+        vista.btnCerrarSesion.addActionListener(e -> cerrarSesion());
 
         // ── Botones de reportes ─────────────────────────────────────────────
         vista.btnGenerarBoletinAdmin.addActionListener(e -> generarBoletinAlumnoSeleccionado());
@@ -61,6 +66,16 @@ public class ControladorAdmin {
             JOptionPane.showMessageDialog(vista, "Completa todos los campos.");
             return;
         }//Fin if
+
+        // Validar contraseña segura
+        String errorPass = ValidadorPassword.validar(pass);
+        if (errorPass != null) {
+            JOptionPane.showMessageDialog(vista,
+                    errorPass + "\n\n" + ValidadorPassword.obtenerRequisitos(),
+                    "Contraseña insegura", JOptionPane.WARNING_MESSAGE);
+            return;
+        }//Fin if
+
         for (Alumno a : sistema.getAlumnos()) {
             //Comprobar que no se duplique la matricula
             if (a.getMatricula().equalsIgnoreCase(matricula)) {
@@ -97,6 +112,15 @@ public class ControladorAdmin {
 
         if (nombre.isEmpty() || correo.isEmpty() || pass.isEmpty() || matricula.isEmpty()) {
             JOptionPane.showMessageDialog(vista, "Completa todos los campos.");
+            return;
+        }//Fin if
+
+        // Validar contraseña segura
+        String errorPassEdit = ValidadorPassword.validar(pass);
+        if (errorPassEdit != null) {
+            JOptionPane.showMessageDialog(vista,
+                    errorPassEdit + "\n\n" + ValidadorPassword.obtenerRequisitos(),
+                    "Contraseña insegura", JOptionPane.WARNING_MESSAGE);
             return;
         }//Fin if
 
@@ -199,6 +223,15 @@ public class ControladorAdmin {
             return;
         }//Fin if
 
+        // Validar contraseña segura
+        String errorPassProf = ValidadorPassword.validar(pass);
+        if (errorPassProf != null) {
+            JOptionPane.showMessageDialog(vista,
+                    errorPassProf + "\n\n" + ValidadorPassword.obtenerRequisitos(),
+                    "Contraseña insegura", JOptionPane.WARNING_MESSAGE);
+            return;
+        }//Fin if
+
         for (Profesor p : sistema.getProfesores()) {
             if (p.getCorreo().equalsIgnoreCase(correo)) {
                 JOptionPane.showMessageDialog(vista, "Ya existe un profesor con ese correo.");
@@ -233,6 +266,15 @@ public class ControladorAdmin {
         String pass = vista.txtPasswordProfesor.getText().trim();
         if (nombre.isEmpty() || correo.isEmpty() || pass.isEmpty()) {
             JOptionPane.showMessageDialog(vista, "Completa todos los campos.");
+            return;
+        }//Fin if
+
+        // Validar contraseña segura
+        String errorPassEditProf = ValidadorPassword.validar(pass);
+        if (errorPassEditProf != null) {
+            JOptionPane.showMessageDialog(vista,
+                    errorPassEditProf + "\n\n" + ValidadorPassword.obtenerRequisitos(),
+                    "Contraseña insegura", JOptionPane.WARNING_MESSAGE);
             return;
         }//Fin if
 
@@ -374,7 +416,8 @@ public class ControladorAdmin {
             JOptionPane.showMessageDialog(vista, "Selecciona un alumno de la tabla primero.");
             return;
         }//Fin if
-        String matricula = (String) vista.tablaAlumnos.getValueAt(fila, 3);
+        // La columna 2 de la tabla es "Matrícula" (0=Nombre, 1=Correo, 2=Matrícula, 3=Inscripción)
+        String matricula = (String) vista.tablaAlumnos.getValueAt(fila, 2);
         Alumno seleccionado = null;
         for (Alumno a : sistema.getAlumnos()) {
             if (a.getMatricula().equalsIgnoreCase(matricula)) {
@@ -400,6 +443,22 @@ public class ControladorAdmin {
             ServicioReportes.generarReportesLoteAsync(sistema, vista.tablaAlumnos);
         }//Fin if
     }
+
+    // Cerrar sesión y volver al login
+    private void cerrarSesion() {
+        int confirmacion = JOptionPane.showConfirmDialog(
+                vista,
+                "¿Deseas cerrar sesión?",
+                "Cerrar Sesión",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+        if (confirmacion == JOptionPane.YES_OPTION) {
+            VentanaLogin vLogin = new VentanaLogin();
+            new ControladorLogin(vLogin, sistema);
+            vLogin.setVisible(true);
+            vista.dispose();
+        }//Fin if
+    }//Fin cerrarSesion
 
     public void cargarTablaMaterias() {
         DefaultTableModel modelo = new DefaultTableModel(new String[]{"Nombre", "Clave", "Horario"}, 0) {

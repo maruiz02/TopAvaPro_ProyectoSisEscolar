@@ -3,6 +3,7 @@ package itz.controlador;
 import itz.modelo.*;
 import itz.reporte.ServicioReportes;
 import itz.vista.VentanaAlumno;
+import itz.vista.VentanaLogin;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.Color;
@@ -29,6 +30,7 @@ public class ControladorAlumno {
 
         vista.btnInscribir.addActionListener(e -> inscribirMateria());
         vista.btnCancelarInscripcion.addActionListener(e -> cancelarInscripcion());
+        vista.btnCerrarSesion.addActionListener(e -> cerrarSesion());
     }
 
     //Buscando alumno
@@ -256,4 +258,20 @@ public class ControladorAlumno {
             JOptionPane.showMessageDialog(vista, "Inscripción cancelada.");
         }//Fin if
     }
+    // Cerrar sesión y volver al login
+    private void cerrarSesion() {
+        int confirmacion = JOptionPane.showConfirmDialog(
+                vista,
+                "¿Deseas cerrar sesión?",
+                "Cerrar Sesión",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+        if (confirmacion == JOptionPane.YES_OPTION) {
+            VentanaLogin vLogin = new VentanaLogin();
+            new ControladorLogin(vLogin, sistema);
+            vLogin.setVisible(true);
+            vista.dispose();
+        }//Fin if
+    }//Fin cerrarSesion
+
 }//Fin de la clase

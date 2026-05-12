@@ -23,6 +23,9 @@ public class VentanaAlumno extends JFrame {
     // Panel del perfil (foto)
     public PanelFoto panelFoto;
 
+    // Botón de cerrar sesión
+    public JButton btnCerrarSesion;
+
     Color colorPrimario = new Color(52, 152, 219);
     Color colorPeligro  = new Color(231, 76, 60);
     Color colorExito    = new Color(46, 204, 113);
@@ -148,7 +151,37 @@ public class VentanaAlumno extends JFrame {
         tabs.addTab("Mi Horario",      panelHorario);
         tabs.addTab("Inscripción",     panelInscripcion);
 
-        add(tabs);
+        // Barra superior con usuario y botón de cerrar sesión
+        JPanel barraTop = new JPanel(new BorderLayout());
+        barraTop.setBackground(new Color(21, 67, 96));
+        barraTop.setBorder(new EmptyBorder(6, 15, 6, 15));
+
+        JLabel lblUsuario = new JLabel("👤  " + nombre + "  |  Alumno");
+        lblUsuario.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblUsuario.setForeground(new Color(163, 228, 215));
+
+        btnCerrarSesion = new JButton("⎋  Cerrar Sesión");
+        btnCerrarSesion.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnCerrarSesion.setForeground(Color.WHITE);
+        btnCerrarSesion.setBackground(new Color(192, 57, 43));
+        btnCerrarSesion.setFocusPainted(false);
+        btnCerrarSesion.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
+        btnCerrarSesion.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCerrarSesion.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btnCerrarSesion.setBackground(new Color(169, 50, 38));
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btnCerrarSesion.setBackground(new Color(192, 57, 43));
+            }
+        });
+
+        barraTop.add(lblUsuario,      BorderLayout.WEST);
+        barraTop.add(btnCerrarSesion, BorderLayout.EAST);
+
+        setLayout(new BorderLayout());
+        add(barraTop, BorderLayout.NORTH);
+        add(tabs,     BorderLayout.CENTER);
     }
 
     private JButton crearBoton(String texto, Color colorFondo) {
@@ -165,4 +198,4 @@ public class VentanaAlumno extends JFrame {
         });
         return boton;
     }
-}//Fin de la clase 
+}//Fin de la clase

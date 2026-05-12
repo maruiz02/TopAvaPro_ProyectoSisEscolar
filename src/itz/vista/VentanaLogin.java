@@ -3,6 +3,8 @@ package itz.vista;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
 public class VentanaLogin extends JFrame {
     //Declaracion de variables
@@ -51,6 +53,19 @@ public class VentanaLogin extends JFrame {
         panel.add(btnLogin);
 
         add(panel, BorderLayout.CENTER);
+
+        // ENTER en campo usuario salta a contraseña
+        txtCorreo.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    txtPassword.requestFocusInWindow();
+                }
+            }
+        });
+
+        // ENTER desde cualquier campo dispara el login
+        getRootPane().setDefaultButton(btnLogin);
     }
 
     private void estilizarCampo(JTextField campo, String placeholder) {

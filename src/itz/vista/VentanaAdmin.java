@@ -3,6 +3,8 @@ package itz.vista;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
 public class VentanaAdmin extends JFrame {
 
@@ -30,6 +32,9 @@ public class VentanaAdmin extends JFrame {
 
     // Panel del perfil (foto admin)
     public PanelFoto panelFoto;
+
+    // Botón de cerrar sesión
+    public JButton btnCerrarSesion;
 
     Color colorPrimario = new Color(52, 152, 219);
     Color colorPeligro = new Color(231, 76, 60);
@@ -95,6 +100,9 @@ public class VentanaAdmin extends JFrame {
         formAlumno.add(txtPassword);
         formAlumno.add(new JLabel("Matrícula:"));
         formAlumno.add(txtMatricula);
+        // ENTER en último campo del formulario Alumno dispara "Agregar"
+        agregarEnterListener(txtMatricula, btnAgregarAlumno);
+
         formAlumno.add(btnAgregarAlumno);
         formAlumno.add(btnEditarAlumno);
         formAlumno.add(new JLabel());
@@ -144,6 +152,9 @@ public class VentanaAdmin extends JFrame {
         formProfesor.add(txtCorreoProfesor);
         formProfesor.add(new JLabel("Password:"));
         formProfesor.add(txtPasswordProfesor);
+        // ENTER en último campo del formulario Profesor dispara "Agregar"
+        agregarEnterListener(txtPasswordProfesor, btnAgregarProfesor);
+
         formProfesor.add(btnAgregarProfesor);
         formProfesor.add(btnEditarProfesor);
         formProfesor.add(new JLabel());
@@ -176,6 +187,9 @@ public class VentanaAdmin extends JFrame {
         subMateria.add(txtNombreMateria);
         subMateria.add(new JLabel("Clave:"));
         subMateria.add(txtClaveMateria);
+        // ENTER en último campo de Materia dispara "Guardar"
+        agregarEnterListener(txtClaveMateria, btnAgregarMateria);
+
         subMateria.add(btnAgregarMateria);
         subMateria.add(btnEditarMateria);
         subMateria.add(new JLabel());
@@ -189,6 +203,11 @@ public class VentanaAdmin extends JFrame {
         txtCorreoProfesorAsignar = new JTextField();
         btnCrearHorario = crearBoton("Establecer Horario", colorPrimario);
         btnAsignarProfesor = crearBoton("Asignar a Profesor", colorExito);
+        // ENTER en campo Hora dispara "Establecer Horario"
+        agregarEnterListener(txtHora, btnCrearHorario);
+        // ENTER en campo Correo Profesor dispara "Asignar a Profesor"
+        agregarEnterListener(txtCorreoProfesorAsignar, btnAsignarProfesor);
+
         subHorario.add(new JLabel("Clave Materia:"));
         subHorario.add(txtClaveMateriaHorario);
         subHorario.add(new JLabel("Día:"));
@@ -257,7 +276,37 @@ public class VentanaAdmin extends JFrame {
         tabs.addTab("Profesores", panelProfesores);
         tabs.addTab("Materias y Horarios", panelMaterias);
         tabs.addTab("Reportes", panelReportes);
-        add(tabs);
+        // Barra superior con usuario y botón de cerrar sesión
+        JPanel barraTop = new JPanel(new BorderLayout());
+        barraTop.setBackground(new Color(44, 62, 80));
+        barraTop.setBorder(new EmptyBorder(6, 15, 6, 15));
+
+        JLabel lblUsuario = new JLabel("👤  " + nombre + "  |  Administrador");
+        lblUsuario.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        lblUsuario.setForeground(new Color(189, 195, 199));
+
+        btnCerrarSesion = new JButton("⎋  Cerrar Sesión");
+        btnCerrarSesion.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnCerrarSesion.setForeground(Color.WHITE);
+        btnCerrarSesion.setBackground(new Color(192, 57, 43));
+        btnCerrarSesion.setFocusPainted(false);
+        btnCerrarSesion.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
+        btnCerrarSesion.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCerrarSesion.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                btnCerrarSesion.setBackground(new Color(169, 50, 38));
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                btnCerrarSesion.setBackground(new Color(192, 57, 43));
+            }
+        });
+
+        barraTop.add(lblUsuario,      BorderLayout.WEST);
+        barraTop.add(btnCerrarSesion, BorderLayout.EAST);
+
+        setLayout(new BorderLayout());
+        add(barraTop, BorderLayout.NORTH);
+        add(tabs,     BorderLayout.CENTER);
     }
 
     //Creando botones
@@ -268,5 +317,17 @@ public class VentanaAdmin extends JFrame {
         boton.setFocusPainted(false);
         boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return boton;
+    }
+
+    // Permite que al presionar ENTER en un campo se dispare un botón
+    private void agregarEnterListener(JTextField campo, JButton boton) {
+        campo.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    boton.doClick();
+                }
+            }
+        });
     }
 }//FIn de la clase

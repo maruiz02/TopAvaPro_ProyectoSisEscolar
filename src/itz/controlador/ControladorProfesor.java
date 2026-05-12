@@ -1,9 +1,13 @@
 package itz.controlador;
 
 import itz.modelo.*;
+import itz.vista.VentanaLogin;
 import itz.vista.VentanaProfesor;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
 
 public class ControladorProfesor {
 
@@ -24,8 +28,11 @@ public class ControladorProfesor {
         cargarMateriasCombo();
         cargarTablaHorario();
         cargarTablaMisMaterias();
+        cargarTablaAlumnosProfesor();
         vista.comboMaterias.addActionListener(e -> cargarAlumnosMateria());
         vista.btnGuardarCalificacion.addActionListener(e -> guardarCalificacion());
+        vista.btnRefrescarAlumnos.addActionListener(e -> cargarTablaAlumnosProfesor());
+        vista.btnCerrarSesion.addActionListener(e -> cerrarSesion());
     }
 
     //Cargar las materias     
@@ -103,6 +110,53 @@ public class ControladorProfesor {
         return -1;
     }
 
+    /**
+     * Carga en tablaAlumnosProfesor TODOS los alumnos inscritos en
+     * cualquiera de las materias que imparte este profesor.
+     * Usa un LinkedHashMap para evitar duplicados, manteniendo el orden
+     * de inserción y agrupando las materias de cada alumno.
+     */
+    public void cargarTablaAlumnosProfesor() {
+        // Mapa: matrícula -> fila de datos ya construida
+        // Si un alumno aparece en varias materias se acumulan las materias.
+        Map<String, String[]> mapaAlumnos = new LinkedHashMap<>();
+
+        for (Materia m : profesor.getMaterias()) {
+            for (Alumno a : m.getAlumnos()) {
+                String key = a.getMatricula();
+                if (mapaAlumnos.containsKey(key)) {
+                    // Agregar esta materia a la lista ya existente
+                    String materiasYa = mapaAlumnos.get(key)[3];
+                    mapaAlumnos.get(key)[3] = materiasYa + ", " + m.getNombre();
+                } else {
+                    double cal = obtenerCalificacionAlumno(a, m);
+                    String calStr = cal == -1 ? "—" : String.format("%.1f", cal);
+                    mapaAlumnos.put(key, new String[]{
+                        a.getNombre(),
+                        a.getMatricula(),
+                        a.getCorreo(),
+                        m.getNombre(),
+                        calStr
+                    });
+                }//Fin if-else
+            }//Fin for alumnos
+        }//Fin for materias
+
+        String[] columnas = {"Nombre", "Matrícula", "Correo", "Materia(s)", "Calificación"};
+        DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
+        };
+
+        for (String[] fila : mapaAlumnos.values()) {
+            modelo.addRow(fila);
+        }//Fin for
+
+        vista.tablaAlumnosProfesor.setModel(modelo);
+    }//Fin cargarTablaAlumnosProfesor
+
     //Guardando la calificacion 
     private void guardarCalificacion() {
         int idx = vista.comboMaterias.getSelectedIndex();
@@ -162,9 +216,26 @@ public class ControladorProfesor {
 
         sistema.guardarSistema();
         cargarAlumnosMateria();
+        cargarTablaAlumnosProfesor();
         vista.txtIdAlumno.setText("");
         vista.txtCalificacion.setText("");
         JOptionPane.showMessageDialog(vista,
                 "Calificación " + calValor + " guardada para " + alumnoTarget.getNombre() + ".");
     }
+    // Cerrar sesión y volver al login
+    private void cerrarSesion() {
+        int confirmacion = JOptionPane.showConfirmDialog(
+                vista,
+                "¿Deseas cerrar sesión?",
+                "Cerrar Sesión",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+        if (confirmacion == JOptionPane.YES_OPTION) {
+            VentanaLogin vLogin = new VentanaLogin();
+            new ControladorLogin(vLogin, sistema);
+            vLogin.setVisible(true);
+            vista.dispose();
+        }//Fin if
+    }//Fin cerrarSesion
+
 }//Fin de la clase
