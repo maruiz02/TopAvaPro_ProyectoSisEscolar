@@ -14,6 +14,7 @@ public class ControladorAdmin {
     private VentanaAdmin vista;
     private SistemaEscolar sistema;
 
+    //Contructor
     public ControladorAdmin(VentanaAdmin vista, SistemaEscolar sistema) {
         this.vista = vista;
         this.sistema = sistema;
@@ -41,20 +42,22 @@ public class ControladorAdmin {
         vista.tablaAlumnos.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 cargarAlumnoEnFormulario();
-            }
+            }//Fin if 
         });
         vista.tablaProfesores.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 cargarProfesorEnFormulario();
-            }
+            }//Fin if 
         });
 
+        //Cargando los datos del sistema
         cargarTablaAlumnos();
         cargarTablaProfesores();
         cargarTablaMaterias();
     }//Fin constructor
 
     //Parte de los Alumnos
+    //Metodo para agregar alumnos 
     private void agregarAlumno() {
         //Declaracion de Variables
         String nombre = vista.txtNombre.getText().trim();
@@ -95,8 +98,9 @@ public class ControladorAdmin {
         //limpiar formulario
         limpiarFormularioAlumno();
         JOptionPane.showMessageDialog(vista, "Alumno agregado correctamente.");
-    }
+    }//Fin agregarAlumno
 
+    //Metodo para editar alumnos
     private void editarAlumno() {
         int fila = vista.tablaAlumnos.getSelectedRow();
         if (fila < 0) {
@@ -134,8 +138,9 @@ public class ControladorAdmin {
         cargarTablaAlumnos();
         limpiarFormularioAlumno();
         JOptionPane.showMessageDialog(vista, "Alumno actualizado correctamente.");
-    }
+    }//Fin de editarAlumno
 
+    //Metodo para eliminar Alumnos 
     private void eliminarAlumno() {
         int fila = vista.tablaAlumnos.getSelectedRow();
         if (fila < 0) {
@@ -155,14 +160,15 @@ public class ControladorAdmin {
             limpiarFormularioAlumno();
             JOptionPane.showMessageDialog(vista, "Alumno eliminado.");
         }//Fin if
-    }
+    }//FIn de eliminarAlumno
 
+    //metodo para autorizar inscripcion
     private void actualizarPermisoInscripcion() {
         int fila = vista.tablaAlumnos.getSelectedRow();
         if (fila < 0) {
             JOptionPane.showMessageDialog(vista, "Selecciona un alumno para actualizar su permiso.");
             return;
-        }
+        }//Fin if 
         Alumno alumno = sistema.getAlumnos().get(fila);
         boolean permitir = vista.chkPermitirInscripcion.isSelected();
         alumno.setInscripcionPermitida(permitir);
@@ -172,21 +178,23 @@ public class ControladorAdmin {
                 ? "Inscripción PERMITIDA para " + alumno.getNombre()
                 : "Inscripción DENEGADA para " + alumno.getNombre();
         JOptionPane.showMessageDialog(vista, msg);
-    }
+    }//Fin actualizarInscripcion
 
+    //Metodo para cargar alumnos existentes 
     private void cargarAlumnoEnFormulario() {
         int fila = vista.tablaAlumnos.getSelectedRow();
         if (fila < 0) {
             return;
-        }
+        }//Fin if 
         Alumno alumno = sistema.getAlumnos().get(fila);
         vista.txtNombre.setText(alumno.getNombre());
         vista.txtCorreo.setText(alumno.getCorreo());
         vista.txtPassword.setText(alumno.getPassword());
         vista.txtMatricula.setText(alumno.getMatricula());
         vista.chkPermitirInscripcion.setSelected(alumno.isInscripcionPermitida());
-    }
+    }//Fin de cargarAlumnoEnFormulario
 
+    //Metodo para borrar campos del formulario
     private void limpiarFormularioAlumno() {
         vista.txtNombre.setText("");
         vista.txtCorreo.setText("");
@@ -196,6 +204,7 @@ public class ControladorAdmin {
         vista.tablaAlumnos.clearSelection();
     }
 
+    //Metodo para cargar tabla de los alumnos 
     public void cargarTablaAlumnos() {
         DefaultTableModel modelo = new DefaultTableModel(
                 new String[]{"Nombre", "Correo", "Matrícula", "Inscripción"}, 0) {
@@ -207,7 +216,7 @@ public class ControladorAdmin {
         for (Alumno a : sistema.getAlumnos()) {
             String permiso = a.isInscripcionPermitida() ? "Permitida" : "Denegada";
             modelo.addRow(new Object[]{a.getNombre(), a.getCorreo(), a.getMatricula(), permiso});
-        }
+        }//Fin for
         vista.tablaAlumnos.setModel(modelo);
     }
 
@@ -314,7 +323,7 @@ public class ControladorAdmin {
         int fila = vista.tablaProfesores.getSelectedRow();
         if (fila < 0) {
             return;
-        }
+        }//Fin if 
         Profesor profesor = sistema.getProfesores().get(fila);
         vista.txtNombreProfesor.setText(profesor.getNombre());
         vista.txtCorreoProfesor.setText(profesor.getCorreo());

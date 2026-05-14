@@ -186,7 +186,9 @@ public class TareaBoletinCalificaciones implements Callable<File> {
     }
 
     private static String escapeHtml(String s) {
-        if (s == null) return "";
+        if (s == null){ 
+            return "";
+        }//Fin if 
         return s.replace("&", "&amp;")
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")

@@ -1,5 +1,6 @@
 package itz.vista;
 
+import itz.util.NavegacionTeclado;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -83,6 +84,9 @@ public class VentanaAdmin extends JFrame {
         txtPassword = new JPasswordField();
         txtMatricula = new JTextField();
 
+        // Navegación con flechas ↑ ↓ entre campos del formulario Alumno
+        NavegacionTeclado.registrar(txtNombre, txtCorreo, txtPassword, txtMatricula);
+
         btnAgregarAlumno = crearBoton("Agregar Alumno", colorExito);
         btnEditarAlumno = crearBoton("Editar Alumno", colorPrimario);
         btnEliminarAlumno = crearBoton("Eliminar Alumno", colorPeligro);
@@ -148,6 +152,9 @@ public class VentanaAdmin extends JFrame {
         btnEditarProfesor = crearBoton("Editar Profesor", colorPrimario);
         btnEliminarProfesor = crearBoton("Eliminar Profesor", colorPeligro);
 
+        // Navegación con flechas ↑ ↓ entre campos del formulario Profesor
+        NavegacionTeclado.registrar(txtNombreProfesor, txtCorreoProfesor, txtPasswordProfesor);
+
         formProfesor.add(new JLabel("Nombre Profesor:"));
         formProfesor.add(txtNombreProfesor);
         formProfesor.add(new JLabel("Correo:"));
@@ -185,6 +192,9 @@ public class VentanaAdmin extends JFrame {
         btnAgregarMateria = crearBoton("Guardar", colorExito);
         btnEditarMateria = crearBoton("Editar", colorPrimario);
         btnEliminarMateria = crearBoton("Eliminar", colorPeligro);
+
+        // Navegación con flechas ↑ ↓ entre campos de Materia
+        NavegacionTeclado.registrar(txtNombreMateria, txtClaveMateria);
         subMateria.add(new JLabel("Nombre:"));
         subMateria.add(txtNombreMateria);
         subMateria.add(new JLabel("Clave:"));
@@ -205,6 +215,9 @@ public class VentanaAdmin extends JFrame {
         txtCorreoProfesorAsignar = new JTextField();
         btnCrearHorario = crearBoton("Establecer Horario", colorPrimario);
         btnAsignarProfesor = crearBoton("Asignar a Profesor", colorExito);
+
+        // Navegación con flechas ↑ ↓ entre campos de Horario y Asignación
+        NavegacionTeclado.registrar(txtClaveMateriaHorario, txtDia, txtHora, txtCorreoProfesorAsignar);
         // ENTER en campo Hora dispara "Establecer Horario"
         agregarEnterListener(txtHora, btnCrearHorario);
         // ENTER en campo Correo Profesor dispara "Asignar a Profesor"
@@ -328,7 +341,7 @@ public class VentanaAdmin extends JFrame {
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     boton.doClick();
-                }
+                }//Fin if 
             }
         });
     }

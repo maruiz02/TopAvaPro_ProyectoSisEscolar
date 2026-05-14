@@ -1,5 +1,6 @@
 package itz.vista;
 
+import itz.util.NavegacionTeclado;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -35,11 +36,11 @@ public class VentanaLogin extends JFrame {
         lblIconoLogin = new JLabel();
         lblIconoLogin.setAlignmentX(Component.CENTER_ALIGNMENT);
         lblIconoLogin.setOpaque(false); // Transparencia activa
-        
+
         try {
             // Cargamos la imagen desde recursos
             ImageIcon iconoOriginal = new ImageIcon(getClass().getResource("/resources/login.png"));
-            
+
             // Escalado de alta calidad (120x120 es un buen tamaño estándar)
             Image imgRedimensionada = iconoOriginal.getImage().getScaledInstance(120, 120, Image.SCALE_SMOOTH);
             lblIconoLogin.setIcon(new ImageIcon(imgRedimensionada));
@@ -58,6 +59,9 @@ public class VentanaLogin extends JFrame {
         txtPassword = new JPasswordField();
         estilizarCampo(txtCorreo);
         estilizarCampo(txtPassword);
+
+        // Navegación con flechas ↑ ↓ entre campos
+        NavegacionTeclado.registrar(txtCorreo, txtPassword);
 
         btnLogin = new JButton("ENTRAR");
         estilizarBoton(btnLogin);
@@ -108,6 +112,11 @@ public class VentanaLogin extends JFrame {
     }
 
     // Getters para el controlador
-    public JTextField getTxtCorreo() { return txtCorreo; }
-    public JPasswordField getTxtPassword() { return txtPassword; }
-}
+    public JTextField getTxtCorreo() {
+        return txtCorreo;
+    }
+
+    public JPasswordField getTxtPassword() {
+        return txtPassword;
+    }
+}//Fin de la clase

@@ -14,7 +14,8 @@ public class ControladorAlumno {
     private VentanaAlumno vista;
     private SistemaEscolar sistema;
     private Alumno alumno;
-
+    
+    //Constructor 
     public ControladorAlumno(VentanaAlumno vista, SistemaEscolar sistema, Alumno alumnoLogin) {
         this.vista = vista;
         this.sistema = sistema;
@@ -66,6 +67,7 @@ public class ControladorAlumno {
         mostrarPromedio();
     }
 
+    //Metodo para obtener calificaciones
     private double obtenerCalificacion(Materia materia) {
         for (Calificacion c : alumno.getKardex().getHistorial()) {
             if (c.getMateria().getClave().equalsIgnoreCase(materia.getClave())) {
@@ -105,7 +107,7 @@ public class ControladorAlumno {
         Alumno fresco = recargarAlumno();
         if (fresco != null) {
             alumno = fresco;
-        }
+        }//Fin if 
 
         boolean permitida = alumno.isInscripcionPermitida();
         if (permitida) {
@@ -175,6 +177,7 @@ public class ControladorAlumno {
         return false;
     }
 
+    //Metodo para verificar inscripcion autorizada
     private void inscribirMateria() {
         // Re-verificar permiso en tiempo real (por si el admin lo cambió desde otra sesión)
         actualizarEstadoInscripcion();
@@ -216,6 +219,7 @@ public class ControladorAlumno {
                 "¡Inscrito correctamente en \"" + seleccionada.getNombre() + "\"!");
     }
 
+    //Metodo para verficar inscripcion denegada
     private void cancelarInscripcion() {
         actualizarEstadoInscripcion();
 
@@ -240,7 +244,7 @@ public class ControladorAlumno {
         }//Fin for
         if (aRemover == null) {
             return;
-        }
+        }//Fin if 
 
         int confirm = JOptionPane.showConfirmDialog(vista,
                 "¿Cancelar inscripción en \"" + aRemover.getNombre() + "\"?",
@@ -258,6 +262,7 @@ public class ControladorAlumno {
             JOptionPane.showMessageDialog(vista, "Inscripción cancelada.");
         }//Fin if
     }
+
     // Cerrar sesión y volver al login
     private void cerrarSesion() {
         int confirmacion = JOptionPane.showConfirmDialog(

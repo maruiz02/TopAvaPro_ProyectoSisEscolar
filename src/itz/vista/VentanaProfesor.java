@@ -1,5 +1,6 @@
 package itz.vista;
 
+import itz.util.NavegacionTeclado;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -7,7 +8,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 public class VentanaProfesor extends JFrame {
-    
+
     //Declaracion de variables
     public JComboBox<String> comboMaterias;
     public JTable tablaAlumnos, tablaHorario, tablaMissMaterias, tablaAlumnosProfesor;
@@ -21,9 +22,9 @@ public class VentanaProfesor extends JFrame {
     public JButton btnCerrarSesion;
 
     Color colorPrimario = new Color(52, 152, 219);
-    Color colorExito    = new Color(46, 204, 113);
-    Color colorTexto    = Color.WHITE;
-    
+    Color colorExito = new Color(46, 204, 113);
+    Color colorTexto = Color.WHITE;
+
     //Constructor
     public VentanaProfesor(String nombre, String correo) {
         setTitle("Panel Profesor — " + nombre + " [" + correo + "]");
@@ -31,9 +32,9 @@ public class VentanaProfesor extends JFrame {
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(new Color(245, 245, 245));
-        
+
         itz.App.cambiarIcono(this);
-        
+
         JTabbedPane tabs = new JTabbedPane();
         tabs.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
@@ -52,7 +53,7 @@ public class VentanaProfesor extends JFrame {
         centerPerfil.add(panelFoto);
 
         panelPerfil.add(lblTituloPerfil, BorderLayout.NORTH);
-        panelPerfil.add(centerPerfil,    BorderLayout.CENTER);
+        panelPerfil.add(centerPerfil, BorderLayout.CENTER);
 
         // Pestana 2 -> Gestion de notas 
         JPanel panelCalificaciones = new JPanel(new BorderLayout(15, 15));
@@ -71,9 +72,12 @@ public class VentanaProfesor extends JFrame {
 
         JPanel surCalificaciones = new JPanel(new GridLayout(1, 5, 10, 10));
         surCalificaciones.setBorder(BorderFactory.createTitledBorder("Registrar Calificación"));
-        txtIdAlumno            = new JTextField();
-        txtCalificacion        = new JTextField();
+        txtIdAlumno = new JTextField();
+        txtCalificacion = new JTextField();
         btnGuardarCalificacion = crearBoton("Guardar Nota", colorExito);
+
+        // Navegación con flechas ↑ ↓ entre campos de calificación
+        NavegacionTeclado.registrar(txtIdAlumno, txtCalificacion);
         surCalificaciones.add(new JLabel("Matrícula Alumno:"));
         surCalificaciones.add(txtIdAlumno);
         surCalificaciones.add(new JLabel("Calificación (0-10):"));
@@ -90,8 +94,8 @@ public class VentanaProfesor extends JFrame {
         surCalificaciones.add(btnGuardarCalificacion);
 
         panelCalificaciones.add(norteCalificaciones, BorderLayout.NORTH);
-        panelCalificaciones.add(scrollAlumnos,       BorderLayout.CENTER);
-        panelCalificaciones.add(surCalificaciones,   BorderLayout.SOUTH);
+        panelCalificaciones.add(scrollAlumnos, BorderLayout.CENTER);
+        panelCalificaciones.add(surCalificaciones, BorderLayout.SOUTH);
 
         // Pestana 3 -> Mi Horario
         JPanel panelHorario = new JPanel(new BorderLayout(10, 10));
@@ -100,7 +104,7 @@ public class VentanaProfesor extends JFrame {
         lblTituloHorario.setFont(new Font("Segoe UI", Font.BOLD, 18));
         tablaHorario = new JTable();
         tablaHorario.setRowHeight(30);
-        panelHorario.add(lblTituloHorario,              BorderLayout.NORTH);
+        panelHorario.add(lblTituloHorario, BorderLayout.NORTH);
         panelHorario.add(new JScrollPane(tablaHorario), BorderLayout.CENTER);
 
         // Pestana 4 -> Mis Materias
@@ -113,7 +117,7 @@ public class VentanaProfesor extends JFrame {
         tablaMissMaterias.setRowHeight(28);
         tablaMissMaterias.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         tablaMissMaterias.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
-        panelMisMaterias.add(lblTituloMaterias,                  BorderLayout.NORTH);
+        panelMisMaterias.add(lblTituloMaterias, BorderLayout.NORTH);
         panelMisMaterias.add(new JScrollPane(tablaMissMaterias), BorderLayout.CENTER);
 
         // Pestana 5 -> Mis Alumnos
@@ -139,26 +143,26 @@ public class VentanaProfesor extends JFrame {
         panelBtnRefrescar.add(btnRefrescarAlumnos);
 
         JLabel lblInfo = new JLabel(
-            "  Muestra todos los alumnos inscritos en cualquiera de tus materias.",
-            JLabel.LEFT);
+                "  Muestra todos los alumnos inscritos en cualquiera de tus materias.",
+                JLabel.LEFT);
         lblInfo.setFont(new Font("Segoe UI", Font.ITALIC, 11));
         lblInfo.setForeground(new Color(100, 100, 100));
 
         JPanel norteAlumnos = new JPanel(new BorderLayout());
         norteAlumnos.setOpaque(false);
         norteAlumnos.add(lblTituloAlumnos, BorderLayout.NORTH);
-        norteAlumnos.add(lblInfo,          BorderLayout.CENTER);
+        norteAlumnos.add(lblInfo, BorderLayout.CENTER);
 
-        panelMisAlumnos.add(norteAlumnos,                         BorderLayout.NORTH);
+        panelMisAlumnos.add(norteAlumnos, BorderLayout.NORTH);
         panelMisAlumnos.add(new JScrollPane(tablaAlumnosProfesor), BorderLayout.CENTER);
-        panelMisAlumnos.add(panelBtnRefrescar,                    BorderLayout.SOUTH);
+        panelMisAlumnos.add(panelBtnRefrescar, BorderLayout.SOUTH);
 
         // Agregando pestanas
-        tabs.addTab("Mi Perfil",       panelPerfil);
+        tabs.addTab("Mi Perfil", panelPerfil);
         tabs.addTab("Gestión de Notas", panelCalificaciones);
-        tabs.addTab("Mi Horario",       panelHorario);
-        tabs.addTab("Mis Materias",     panelMisMaterias);
-        tabs.addTab("Mis Alumnos",      panelMisAlumnos);
+        tabs.addTab("Mi Horario", panelHorario);
+        tabs.addTab("Mis Materias", panelMisMaterias);
+        tabs.addTab("Mis Alumnos", panelMisAlumnos);
 
         // Barra superior con usuario y botón de cerrar sesión
         JPanel barraTop = new JPanel(new BorderLayout());
@@ -180,17 +184,18 @@ public class VentanaProfesor extends JFrame {
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 btnCerrarSesion.setBackground(new Color(169, 50, 38));
             }
+
             public void mouseExited(java.awt.event.MouseEvent e) {
                 btnCerrarSesion.setBackground(new Color(192, 57, 43));
             }
         });
 
-        barraTop.add(lblUsuario,      BorderLayout.WEST);
+        barraTop.add(lblUsuario, BorderLayout.WEST);
         barraTop.add(btnCerrarSesion, BorderLayout.EAST);
 
         setLayout(new BorderLayout());
         add(barraTop, BorderLayout.NORTH);
-        add(tabs,     BorderLayout.CENTER);
+        add(tabs, BorderLayout.CENTER);
     }
 
     private JButton crearBoton(String texto, Color colorFondo) {
@@ -202,8 +207,13 @@ public class VentanaProfesor extends JFrame {
         boton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         boton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) { boton.setBackground(colorFondo.darker()); }
-            public void mouseExited(java.awt.event.MouseEvent evt)  { boton.setBackground(colorFondo); }
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                boton.setBackground(colorFondo.darker());
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                boton.setBackground(colorFondo);
+            }
         });
         return boton;
     }

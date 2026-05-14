@@ -111,7 +111,7 @@ public class ServicioReportes {
                 Window ventana = SwingUtilities.getWindowAncestor(barra);
                 if (ventana != null) {
                     ventana.dispose();
-                }
+                }//Fin if 
                 try {
                     File pdf = get();
                     JOptionPane.showMessageDialog(parent,
@@ -177,7 +177,7 @@ public class ServicioReportes {
                 Window ventana = SwingUtilities.getWindowAncestor(barra);
                 if (ventana != null) {
                     ventana.dispose();
-                }
+                }//Fin if 
                 try {
                     List<File> archivos = get();
                     JOptionPane.showMessageDialog(parent,

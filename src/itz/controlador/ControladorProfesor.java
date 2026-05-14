@@ -16,6 +16,7 @@ public class ControladorProfesor {
     private SistemaEscolar sistema;
     private Profesor profesor;
 
+    //Constructor 
     public ControladorProfesor(VentanaProfesor vista, SistemaEscolar sistema, Profesor profesor) {
         this.vista = vista;
         this.sistema = sistema;
@@ -110,12 +111,6 @@ public class ControladorProfesor {
         return -1;
     }
 
-    /**
-     * Carga en tablaAlumnosProfesor TODOS los alumnos inscritos en
-     * cualquiera de las materias que imparte este profesor.
-     * Usa un LinkedHashMap para evitar duplicados, manteniendo el orden
-     * de inserción y agrupando las materias de cada alumno.
-     */
     public void cargarTablaAlumnosProfesor() {
         // Mapa: matrícula -> fila de datos ya construida
         // Si un alumno aparece en varias materias se acumulan las materias.
@@ -138,7 +133,7 @@ public class ControladorProfesor {
                         m.getNombre(),
                         calStr
                     });
-                }//Fin if-else
+                }//Fin if
             }//Fin for alumnos
         }//Fin for materias
 
@@ -192,14 +187,14 @@ public class ControladorProfesor {
             if (a.getMatricula().equalsIgnoreCase(matricula)) {
                 alumnoTarget = a;
                 break;
-            }
-        }
+            }//Fin if 
+        }//Fin for
 
         if (alumnoTarget == null) {
             JOptionPane.showMessageDialog(vista,
                     "El alumno con matrícula \"" + matricula + "\" no está inscrito en esta materia.");
             return;
-        }
+        }//Fin if 
 
         // Actualizar calificacion si ya existe, agregar si no
         boolean actualizado = false;
@@ -222,6 +217,7 @@ public class ControladorProfesor {
         JOptionPane.showMessageDialog(vista,
                 "Calificación " + calValor + " guardada para " + alumnoTarget.getNombre() + ".");
     }
+
     // Cerrar sesión y volver al login
     private void cerrarSesion() {
         int confirmacion = JOptionPane.showConfirmDialog(

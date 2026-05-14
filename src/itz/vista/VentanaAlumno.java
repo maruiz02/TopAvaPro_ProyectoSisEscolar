@@ -27,10 +27,10 @@ public class VentanaAlumno extends JFrame {
     public JButton btnCerrarSesion;
 
     Color colorPrimario = new Color(52, 152, 219);
-    Color colorPeligro  = new Color(231, 76, 60);
-    Color colorExito    = new Color(46, 204, 113);
-    Color colorTexto    = Color.WHITE;
-    
+    Color colorPeligro = new Color(231, 76, 60);
+    Color colorExito = new Color(46, 204, 113);
+    Color colorTexto = Color.WHITE;
+
     //Constructor
     public VentanaAlumno(String nombre, String matricula) {
         setTitle("Panel Alumno — " + nombre + " [" + matricula + "]");
@@ -38,7 +38,7 @@ public class VentanaAlumno extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         getContentPane().setBackground(new Color(245, 245, 245));
-        
+
         itz.App.cambiarIcono(this);
 
         JTabbedPane tabs = new JTabbedPane();
@@ -59,7 +59,7 @@ public class VentanaAlumno extends JFrame {
         centerPerfil.add(panelFoto);
 
         panelPerfil.add(lblTituloPerfil, BorderLayout.NORTH);
-        panelPerfil.add(centerPerfil,    BorderLayout.CENTER);
+        panelPerfil.add(centerPerfil, BorderLayout.CENTER);
 
         // Pestana 2 -> Calificaciones
         JPanel panelCalif = new JPanel(new BorderLayout(10, 10));
@@ -138,20 +138,20 @@ public class VentanaAlumno extends JFrame {
 
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         panelBotones.setOpaque(false);
-        btnInscribir           = crearBoton("Inscribir Materia →", colorExito);
+        btnInscribir = crearBoton("Inscribir Materia →", colorExito);
         btnCancelarInscripcion = crearBoton("← Cancelar Inscripción", colorPeligro);
         panelBotones.add(btnInscribir);
         panelBotones.add(btnCancelarInscripcion);
 
-        panelInscripcion.add(panelEstado,  BorderLayout.NORTH);
+        panelInscripcion.add(panelEstado, BorderLayout.NORTH);
         panelInscripcion.add(panelCentral, BorderLayout.CENTER);
         panelInscripcion.add(panelBotones, BorderLayout.SOUTH);
 
         // Agregando pestanas
-        tabs.addTab("Mi Perfil",       panelPerfil);
-        tabs.addTab("Calificaciones",  panelCalif);
-        tabs.addTab("Mi Horario",      panelHorario);
-        tabs.addTab("Inscripción",     panelInscripcion);
+        tabs.addTab("Mi Perfil", panelPerfil);
+        tabs.addTab("Calificaciones", panelCalif);
+        tabs.addTab("Mi Horario", panelHorario);
+        tabs.addTab("Inscripción", panelInscripcion);
 
         // Barra superior con usuario y botón de cerrar sesión
         JPanel barraTop = new JPanel(new BorderLayout());
@@ -173,17 +173,18 @@ public class VentanaAlumno extends JFrame {
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 btnCerrarSesion.setBackground(new Color(169, 50, 38));
             }
+
             public void mouseExited(java.awt.event.MouseEvent e) {
                 btnCerrarSesion.setBackground(new Color(192, 57, 43));
             }
         });
 
-        barraTop.add(lblUsuario,      BorderLayout.WEST);
+        barraTop.add(lblUsuario, BorderLayout.WEST);
         barraTop.add(btnCerrarSesion, BorderLayout.EAST);
 
         setLayout(new BorderLayout());
         add(barraTop, BorderLayout.NORTH);
-        add(tabs,     BorderLayout.CENTER);
+        add(tabs, BorderLayout.CENTER);
     }
 
     private JButton crearBoton(String texto, Color colorFondo) {
@@ -195,8 +196,13 @@ public class VentanaAlumno extends JFrame {
         boton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         boton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) { boton.setBackground(colorFondo.darker()); }
-            public void mouseExited(java.awt.event.MouseEvent evt)  { boton.setBackground(colorFondo); }
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                boton.setBackground(colorFondo.darker());
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                boton.setBackground(colorFondo);
+            }
         });
         return boton;
     }
