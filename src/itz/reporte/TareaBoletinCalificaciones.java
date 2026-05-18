@@ -9,16 +9,17 @@ import java.util.concurrent.Callable;
 
 public class TareaBoletinCalificaciones implements Callable<File> {
 
+    //Declaracion de variables 
     private final Alumno alumno;
     private final String carpetaSalida;
     private final ProgresoCallback callback;
 
     public TareaBoletinCalificaciones(Alumno alumno,
-                                       String carpetaSalida,
-                                       ProgresoCallback callback) {
-        this.alumno       = alumno;
+            String carpetaSalida,
+            ProgresoCallback callback) {
+        this.alumno = alumno;
         this.carpetaSalida = carpetaSalida;
-        this.callback     = callback;
+        this.callback = callback;
     }
 
     //  call() — corre en el hilo del pool, NO en el EDT de Swing
@@ -41,7 +42,7 @@ public class TareaBoletinCalificaciones implements Callable<File> {
         try (BufferedWriter bw = new BufferedWriter(
                 new FileWriter(archivo, java.nio.charset.StandardCharsets.UTF_8))) {
             bw.write(contenido);
-        }
+        }//Fin try
         callback.onProgreso(90);
 
         // Simular tiempo de procesamiento
@@ -64,16 +65,16 @@ public class TareaBoletinCalificaciones implements Callable<File> {
             Calificacion c = cals.get(i);
             double val = c.getValor();
             boolean aprobado = val >= 6.0;
-            String clase  = aprobado ? "aprobado" : "reprobado";
+            String clase = aprobado ? "aprobado" : "reprobado";
             String estado = aprobado ? "✔ APROBADO" : "✘ REPROBADO";
             filas.append(String.format(
-                    "<tr class='%s-fila'>" +
-                    "<td>%d</td>" +
-                    "<td>%s</td>" +
-                    "<td>%s</td>" +
-                    "<td class='%s'>%.1f</td>" +
-                    "<td class='%s'>%s</td>" +
-                    "</tr>",
+                    "<tr class='%s-fila'>"
+                    + "<td>%d</td>"
+                    + "<td>%s</td>"
+                    + "<td>%s</td>"
+                    + "<td class='%s'>%.1f</td>"
+                    + "<td class='%s'>%s</td>"
+                    + "</tr>",
                     (i % 2 == 0 ? "par" : "impar"),
                     i + 1,
                     escapeHtml(c.getMateria().getNombre()),
@@ -84,8 +85,8 @@ public class TareaBoletinCalificaciones implements Callable<File> {
         }//Fin for
 
         if (cals.isEmpty()) {
-            filas.append("<tr><td colspan='5' style='text-align:center;color:#7f8c8d;'>" +
-                         "Sin calificaciones registradas</td></tr>");
+            filas.append("<tr><td colspan='5' style='text-align:center;color:#7f8c8d;'>"
+                    + "Sin calificaciones registradas</td></tr>");
         }//Fin if 
 
         String colorPromedio = promedio >= 6.0 ? "#27ae60" : "#c0392b";
@@ -186,7 +187,7 @@ public class TareaBoletinCalificaciones implements Callable<File> {
     }
 
     private static String escapeHtml(String s) {
-        if (s == null){ 
+        if (s == null) {
             return "";
         }//Fin if 
         return s.replace("&", "&amp;")

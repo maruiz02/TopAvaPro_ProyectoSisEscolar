@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 public class Kardex implements Serializable {
+    
     //Declaracion de variables 
     private ArrayList<Calificacion> historial = new ArrayList<>();
 
@@ -13,7 +14,8 @@ public class Kardex implements Serializable {
     public ArrayList<Calificacion> getHistorial() { 
         return historial; 
     }
-
+    
+    //Calcular el promedio del alumno 
     public double calcularPromedio() {
         if (historial.isEmpty()) {
             return 0.0;

@@ -3,132 +3,213 @@ package itz.vista;
 import itz.util.NavegacionTeclado;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 public class VentanaProfesor extends JFrame {
 
-    //Declaracion de variables
-    public JComboBox<String> comboMaterias;
-    public JTable tablaAlumnos, tablaHorario, tablaMissMaterias, tablaAlumnosProfesor;
-    public JTextField txtCalificacion, txtIdAlumno;
-    public JButton btnGuardarCalificacion, btnRefrescarAlumnos;
+    //Campos privado
+    private JComboBox<String> comboMaterias;
+    private JTable tablaAlumnos;
+    private JTable tablaHorario;
+    private JTable tablaMissMaterias;
+    private JTable tablaAlumnosProfesor;
+    private JTextField txtCalificacion;
+    private JTextField txtIdAlumno;
+    private JButton btnGuardarCalificacion;
+    private JButton btnRefrescarAlumnos;
+    private JButton btnCerrarSesion;
+    private PanelFoto panelFoto;
 
-    // Panel del perfil (foto)
-    public PanelFoto panelFoto;
-
-    // Botón de cerrar sesión
-    public JButton btnCerrarSesion;
-
-    Color colorPrimario = new Color(52, 152, 219);
-    Color colorExito = new Color(46, 204, 113);
-    Color colorTexto = Color.WHITE;
+    private static final Color COLOR_PRIMARIO = new Color(52, 152, 219);
+    private static final Color COLOR_EXITO    = new Color(46, 204, 113);
+    private static final Color COLOR_TEXTO    = Color.WHITE;
 
     //Constructor
     public VentanaProfesor(String nombre, String correo) {
-        setTitle("Panel Profesor — " + nombre + " [" + correo + "]");
+        setTitle("Panel Profesor - " + nombre + " [" + correo + "]");
         setSize(950, 620);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         getContentPane().setBackground(new Color(245, 245, 245));
-
         itz.App.cambiarIcono(this);
 
         JTabbedPane tabs = new JTabbedPane();
         tabs.setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-        //Pestana 1 -> Mi Pefil
-        JPanel panelPerfil = new JPanel(new BorderLayout());
-        panelPerfil.setBackground(new Color(240, 255, 240));
+        tabs.addTab("Mi Perfil",        construirPanelPerfil(nombre, correo));
+        tabs.addTab("Gestion de Notas", construirPanelCalificaciones());
+        tabs.addTab("Mi Horario",       construirPanelHorario());
+        tabs.addTab("Mis Materias",     construirPanelMisMaterias());
+        tabs.addTab("Mis Alumnos",      construirPanelMisAlumnos());
 
-        JLabel lblTituloPerfil = new JLabel("Mi Perfil", JLabel.CENTER);
-        lblTituloPerfil.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        lblTituloPerfil.setBorder(new EmptyBorder(15, 0, 5, 0));
+        JPanel barraTop = construirBarraTop(nombre);
+        setLayout(new BorderLayout());
+        add(barraTop, BorderLayout.NORTH);
+        add(tabs,     BorderLayout.CENTER);
+    }
+
+    //API PUBLICA PARA EL CONTROLADOR
+
+    public int    getComboMateriasSelectedIndex() { 
+        return comboMaterias.getSelectedIndex(); 
+    }
+    public void   removeAllItemsCombo() { 
+        comboMaterias.removeAllItems(); 
+    }
+    public void   addItemCombo(String item) { 
+        comboMaterias.addItem(item);
+    }
+    public void   addComboListener(ActionListener l) { 
+        comboMaterias.addActionListener(l); 
+    }
+
+    public String getMatriculaAlumno() {
+        return txtIdAlumno.getText().trim(); 
+    }
+    public String getCalificacion() { 
+        return txtCalificacion.getText().trim();
+    }
+    public void   limpiarCamposCalificacion() {
+        txtIdAlumno.setText("");
+        txtCalificacion.setText("");
+    }
+
+    public void setModeloAlumnos(DefaultTableModel m) { 
+        tablaAlumnos.setModel(m); 
+    }
+    public void setModeloHorario(DefaultTableModel m) {
+        tablaHorario.setModel(m); 
+    }
+    public void setModeloMisMaterias(DefaultTableModel m) { 
+        tablaMissMaterias.setModel(m); 
+    }
+    public void setModeloAlumnosProfesor(DefaultTableModel m) { 
+        tablaAlumnosProfesor.setModel(m); }
+    
+
+    public JButton getBtnGuardarCalificacion() { 
+        return btnGuardarCalificacion; 
+    }
+    public JButton getBtnRefrescarAlumnos() { 
+        return btnRefrescarAlumnos;
+    }
+    public JButton getBtnCerrarSesion() { 
+        return btnCerrarSesion; 
+    }
+
+    //Construccion de paneles 
+
+    private JPanel construirPanelPerfil(String nombre, String correo) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(240, 255, 240));
+
+        JLabel titulo = new JLabel("Mi Perfil", JLabel.CENTER);
+        titulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        titulo.setBorder(new EmptyBorder(15, 0, 5, 0));
 
         panelFoto = new PanelFoto(nombre, correo, "Profesor");
+        JPanel centro = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        centro.setBackground(new Color(240, 255, 240));
+        centro.add(panelFoto);
 
-        JPanel centerPerfil = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        centerPerfil.setBackground(new Color(240, 255, 240));
-        centerPerfil.add(panelFoto);
+        panel.add(titulo,  BorderLayout.NORTH);
+        panel.add(centro,  BorderLayout.CENTER);
+        return panel;
+    }
 
-        panelPerfil.add(lblTituloPerfil, BorderLayout.NORTH);
-        panelPerfil.add(centerPerfil, BorderLayout.CENTER);
+    private JPanel construirPanelCalificaciones() {
+        JPanel panel = new JPanel(new BorderLayout(15, 15));
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        // Pestana 2 -> Gestion de notas 
-        JPanel panelCalificaciones = new JPanel(new BorderLayout(15, 15));
-        panelCalificaciones.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        JPanel norteCalificaciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        norteCalificaciones.setOpaque(false);
-        norteCalificaciones.add(new JLabel("Seleccionar Materia:"));
+        JPanel norte = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        norte.setOpaque(false);
+        norte.add(new JLabel("Seleccionar Materia:"));
         comboMaterias = new JComboBox<>();
         comboMaterias.setPreferredSize(new Dimension(250, 30));
-        norteCalificaciones.add(comboMaterias);
+        norte.add(comboMaterias);
 
         tablaAlumnos = new JTable();
         tablaAlumnos.setRowHeight(25);
-        JScrollPane scrollAlumnos = new JScrollPane(tablaAlumnos);
 
-        JPanel surCalificaciones = new JPanel(new GridLayout(1, 5, 10, 10));
-        surCalificaciones.setBorder(BorderFactory.createTitledBorder("Registrar Calificación"));
-        txtIdAlumno = new JTextField();
+        JPanel sur = new JPanel(new GridLayout(1, 5, 10, 10));
+        sur.setBorder(BorderFactory.createTitledBorder("Registrar Calificacion"));
+        txtIdAlumno    = new JTextField();
         txtCalificacion = new JTextField();
-        btnGuardarCalificacion = crearBoton("Guardar Nota", colorExito);
+        btnGuardarCalificacion = crearBoton("Guardar Nota", COLOR_EXITO);
 
-        // Navegación con flechas ↑ ↓ entre campos de calificación
         NavegacionTeclado.registrar(txtIdAlumno, txtCalificacion);
-        surCalificaciones.add(new JLabel("Matrícula Alumno:"));
-        surCalificaciones.add(txtIdAlumno);
-        surCalificaciones.add(new JLabel("Calificación (0-10):"));
-        surCalificaciones.add(txtCalificacion);
-        // ENTER en campo Calificación dispara "Guardar Nota"
         txtCalificacion.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                     btnGuardarCalificacion.doClick();
-                }
+                }//Fin if 
             }
         });
-        surCalificaciones.add(btnGuardarCalificacion);
 
-        panelCalificaciones.add(norteCalificaciones, BorderLayout.NORTH);
-        panelCalificaciones.add(scrollAlumnos, BorderLayout.CENTER);
-        panelCalificaciones.add(surCalificaciones, BorderLayout.SOUTH);
+        sur.add(new JLabel("Matricula Alumno:"));
+        sur.add(txtIdAlumno);
+        sur.add(new JLabel("Calificacion (0-100):"));
+        sur.add(txtCalificacion);
+        sur.add(btnGuardarCalificacion);
 
-        // Pestana 3 -> Mi Horario
-        JPanel panelHorario = new JPanel(new BorderLayout(10, 10));
-        panelHorario.setBorder(new EmptyBorder(20, 20, 20, 20));
-        JLabel lblTituloHorario = new JLabel("Horario de Clases Asignadas", JLabel.CENTER);
-        lblTituloHorario.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        panel.add(norte, BorderLayout.NORTH);
+        panel.add(new JScrollPane(tablaAlumnos), BorderLayout.CENTER);
+        panel.add(sur,   BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel construirPanelHorario() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JLabel titulo = new JLabel("Horario de Clases Asignadas", JLabel.CENTER);
+        titulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+
         tablaHorario = new JTable();
         tablaHorario.setRowHeight(30);
-        panelHorario.add(lblTituloHorario, BorderLayout.NORTH);
-        panelHorario.add(new JScrollPane(tablaHorario), BorderLayout.CENTER);
 
-        // Pestana 4 -> Mis Materias
-        JPanel panelMisMaterias = new JPanel(new BorderLayout(10, 10));
-        panelMisMaterias.setBorder(new EmptyBorder(20, 20, 20, 20));
-        JLabel lblTituloMaterias = new JLabel("Mis Materias Registradas", JLabel.CENTER);
-        lblTituloMaterias.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        lblTituloMaterias.setBorder(new EmptyBorder(0, 0, 15, 0));
+        panel.add(titulo, BorderLayout.NORTH);
+        panel.add(new JScrollPane(tablaHorario), BorderLayout.CENTER);
+        return panel;
+    }
+
+    private JPanel construirPanelMisMaterias() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        JLabel titulo = new JLabel("Mis Materias Registradas", JLabel.CENTER);
+        titulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        titulo.setBorder(new EmptyBorder(0, 0, 15, 0));
+
         tablaMissMaterias = new JTable();
         tablaMissMaterias.setRowHeight(28);
         tablaMissMaterias.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         tablaMissMaterias.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
-        panelMisMaterias.add(lblTituloMaterias, BorderLayout.NORTH);
-        panelMisMaterias.add(new JScrollPane(tablaMissMaterias), BorderLayout.CENTER);
 
-        // Pestana 5 -> Mis Alumnos
-        JPanel panelMisAlumnos = new JPanel(new BorderLayout(10, 10));
-        panelMisAlumnos.setBorder(new EmptyBorder(20, 20, 20, 20));
-        panelMisAlumnos.setBackground(new Color(245, 250, 255));
+        panel.add(titulo, BorderLayout.NORTH);
+        panel.add(new JScrollPane(tablaMissMaterias), BorderLayout.CENTER);
+        return panel;
+    }
 
-        JLabel lblTituloAlumnos = new JLabel("Alumnos Inscritos en Mis Materias", JLabel.CENTER);
-        lblTituloAlumnos.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        lblTituloAlumnos.setForeground(new Color(41, 128, 185));
-        lblTituloAlumnos.setBorder(new EmptyBorder(0, 0, 10, 0));
+    private JPanel construirPanelMisAlumnos() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
+        panel.setBackground(new Color(245, 250, 255));
+
+        JLabel titulo = new JLabel("Alumnos Inscritos en Mis Materias", JLabel.CENTER);
+        titulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        titulo.setForeground(new Color(41, 128, 185));
+        titulo.setBorder(new EmptyBorder(0, 0, 10, 0));
+
+        JLabel info = new JLabel(
+            "  Muestra todos los alumnos inscritos en cualquiera de tus materias.", JLabel.LEFT);
+        info.setFont(new Font("Segoe UI", Font.ITALIC, 11));
+        info.setForeground(new Color(100, 100, 100));
 
         tablaAlumnosProfesor = new JTable();
         tablaAlumnosProfesor.setRowHeight(28);
@@ -136,44 +217,33 @@ public class VentanaProfesor extends JFrame {
         tablaAlumnosProfesor.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
         tablaAlumnosProfesor.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        btnRefrescarAlumnos = crearBoton("🔄 Refrescar Lista", new Color(41, 128, 185));
+        btnRefrescarAlumnos = crearBoton("Refrescar Lista", new Color(41, 128, 185));
 
-        JPanel panelBtnRefrescar = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        panelBtnRefrescar.setOpaque(false);
-        panelBtnRefrescar.add(btnRefrescarAlumnos);
+        JPanel panelBtn = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        panelBtn.setOpaque(false);
+        panelBtn.add(btnRefrescarAlumnos);
 
-        JLabel lblInfo = new JLabel(
-                "  Muestra todos los alumnos inscritos en cualquiera de tus materias.",
-                JLabel.LEFT);
-        lblInfo.setFont(new Font("Segoe UI", Font.ITALIC, 11));
-        lblInfo.setForeground(new Color(100, 100, 100));
+        JPanel norte = new JPanel(new BorderLayout());
+        norte.setOpaque(false);
+        norte.add(titulo, BorderLayout.NORTH);
+        norte.add(info,   BorderLayout.CENTER);
 
-        JPanel norteAlumnos = new JPanel(new BorderLayout());
-        norteAlumnos.setOpaque(false);
-        norteAlumnos.add(lblTituloAlumnos, BorderLayout.NORTH);
-        norteAlumnos.add(lblInfo, BorderLayout.CENTER);
+        panel.add(norte,  BorderLayout.NORTH);
+        panel.add(new JScrollPane(tablaAlumnosProfesor), BorderLayout.CENTER);
+        panel.add(panelBtn, BorderLayout.SOUTH);
+        return panel;
+    }
 
-        panelMisAlumnos.add(norteAlumnos, BorderLayout.NORTH);
-        panelMisAlumnos.add(new JScrollPane(tablaAlumnosProfesor), BorderLayout.CENTER);
-        panelMisAlumnos.add(panelBtnRefrescar, BorderLayout.SOUTH);
+    private JPanel construirBarraTop(String nombre) {
+        JPanel barra = new JPanel(new BorderLayout());
+        barra.setBackground(new Color(27, 79, 114));
+        barra.setBorder(new EmptyBorder(6, 15, 6, 15));
 
-        // Agregando pestanas
-        tabs.addTab("Mi Perfil", panelPerfil);
-        tabs.addTab("Gestión de Notas", panelCalificaciones);
-        tabs.addTab("Mi Horario", panelHorario);
-        tabs.addTab("Mis Materias", panelMisMaterias);
-        tabs.addTab("Mis Alumnos", panelMisAlumnos);
-
-        // Barra superior con usuario y botón de cerrar sesión
-        JPanel barraTop = new JPanel(new BorderLayout());
-        barraTop.setBackground(new Color(27, 79, 114));
-        barraTop.setBorder(new EmptyBorder(6, 15, 6, 15));
-
-        JLabel lblUsuario = new JLabel("👤  " + nombre + "  |  Profesor");
+        JLabel lblUsuario = new JLabel("  " + nombre + "  |  Profesor");
         lblUsuario.setFont(new Font("Segoe UI", Font.BOLD, 13));
         lblUsuario.setForeground(new Color(174, 214, 241));
 
-        btnCerrarSesion = new JButton("⎋  Cerrar Sesión");
+        btnCerrarSesion = new JButton("Cerrar Sesion");
         btnCerrarSesion.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btnCerrarSesion.setForeground(Color.WHITE);
         btnCerrarSesion.setBackground(new Color(192, 57, 43));
@@ -184,37 +254,28 @@ public class VentanaProfesor extends JFrame {
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 btnCerrarSesion.setBackground(new Color(169, 50, 38));
             }
-
             public void mouseExited(java.awt.event.MouseEvent e) {
                 btnCerrarSesion.setBackground(new Color(192, 57, 43));
             }
         });
 
-        barraTop.add(lblUsuario, BorderLayout.WEST);
-        barraTop.add(btnCerrarSesion, BorderLayout.EAST);
-
-        setLayout(new BorderLayout());
-        add(barraTop, BorderLayout.NORTH);
-        add(tabs, BorderLayout.CENTER);
+        barra.add(lblUsuario,     BorderLayout.WEST);
+        barra.add(btnCerrarSesion, BorderLayout.EAST);
+        return barra;
     }
 
-    private JButton crearBoton(String texto, Color colorFondo) {
-        JButton boton = new JButton(texto);
-        boton.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        boton.setForeground(colorTexto);
-        boton.setBackground(colorFondo);
-        boton.setFocusPainted(false);
-        boton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        boton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        boton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                boton.setBackground(colorFondo.darker());
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                boton.setBackground(colorFondo);
-            }
+    private JButton crearBoton(String texto, Color fondo) {
+        JButton b = new JButton(texto);
+        b.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        b.setForeground(COLOR_TEXTO);
+        b.setBackground(fondo);
+        b.setFocusPainted(false);
+        b.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        b.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        b.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) { b.setBackground(fondo.darker()); }
+            public void mouseExited(java.awt.event.MouseEvent e)  { b.setBackground(fondo); }
         });
-        return boton;
+        return b;
     }
-}//Fin de la clase
+}//Fin de la clase 

@@ -1,62 +1,84 @@
 package itz.controlador;
 
 import itz.modelo.*;
+import itz.util.*;
 import itz.vista.*;
 import javax.swing.*;
 
 public class ControladorLogin {
 
-    //Declaracion de variables
+    //Declaracion de variables 
+    private static final int MAX_INTENTOS = 5; //Maximo de intentos para logear al usuario 
     private VentanaLogin vista;
     private SistemaEscolar sistema;
+    private int intentosFallidos = 0;
 
     public ControladorLogin(VentanaLogin vista, SistemaEscolar sistema) {
         this.vista = vista;
         this.sistema = sistema;
-        this.vista.btnLogin.addActionListener(e -> iniciarSesion());
+        // Usamos la API publica en lugar de acceder al campo btnLogin directamente
+        this.vista.addLoginListener(e -> iniciarSesion());
     }
 
-    //Iniciando sesion 
+    //Iniciar sesion 
     private void iniciarSesion() {
-        String usuario = vista.getTxtCorreo().getText().trim();
-        String pass = new String(vista.getTxtPassword().getPassword());
+        // Bloqueo por intentos
+        if (intentosFallidos >= MAX_INTENTOS) {
+            Dialogos.error(vista,
+                    "Cuenta bloqueada por multiples intentos fallidos.\n"
+                    + "Reinicia la aplicacion para volver a intentarlo.",
+                    "Acceso bloqueado");
+            vista.setBloqueado(true);
+            return;
+        }//fin if 
+
+        String usuario = vista.getUsuario();
+        String pass = vista.getPasswordTexto();
 
         if (usuario.isEmpty() || pass.isEmpty()) {
-            JOptionPane.showMessageDialog(vista, "Por favor, complete todos los campos.");
+            Dialogos.advertencia(vista,
+                    "Por favor, completa todos los campos.",
+                    "Campos vacios");
             return;
-        }//Fin if
+        }//fin if 
 
-        // Para el administrador
+        // Administrador
         for (Administrador admin : sistema.getAdministradores()) {
-            if (admin.getCorreo().equalsIgnoreCase(usuario) && admin.getPassword().equals(pass)) {
+            if (admin.getCorreo().equalsIgnoreCase(usuario)
+                    && admin.getPassword().equals(pass)) {
                 abrirAdmin(admin);
                 return;
-            }//Fin if
-        }//Fin for
+            }//fin if
+        }//fin for 
 
-        //Para el profesor
+        // Profesor
         for (Profesor p : sistema.getProfesores()) {
-            if (p.getCorreo().equalsIgnoreCase(usuario) && p.getPassword().equals(pass)) {
+            if (p.getCorreo().equalsIgnoreCase(usuario)
+                    && p.getPassword().equals(pass)) {
                 abrirProfesor(p);
                 return;
-            }//Fin if 
-        }//Fin for
+            }//fin if 
+        }//fin for 
 
-        //Para el alumno -> login por matricula
+        // Alumno (login por matricula)
         for (Alumno a : sistema.getAlumnos()) {
-            if (a.getMatricula().equalsIgnoreCase(usuario) && a.getPassword().equals(pass)) {
+            if (a.getMatricula().equalsIgnoreCase(usuario)
+                    && a.getPassword().equals(pass)) {
                 abrirAlumno(a);
                 return;
-            }//Fin if 
-        }//Fin for
+            }//fin if 
+        }//fin for 
 
-        JOptionPane.showMessageDialog(vista,
-                "Credenciales incorrectas.\n"
-                + "Admin/Profesor: usar correo\n"
-                + "Alumno: usar matrícula");
+        // Credenciales incorrectas
+        intentosFallidos++;
+        int restantes = MAX_INTENTOS - intentosFallidos;
+        Dialogos.avisarIntentoFallido(vista, restantes);
+
+        if (intentosFallidos >= MAX_INTENTOS) {
+            vista.setBloqueado(true);
+        }//fin if 
     }
 
-    //Abriendo ventana admin
     private void abrirAdmin(Administrador admin) {
         VentanaAdmin vAdmin = new VentanaAdmin(admin.getNombre(), admin.getCorreo());
         new ControladorAdmin(vAdmin, sistema);
@@ -64,7 +86,6 @@ public class ControladorLogin {
         vista.dispose();
     }
 
-    //Abriendo ventana profesor
     private void abrirProfesor(Profesor p) {
         VentanaProfesor vProf = new VentanaProfesor(p.getNombre(), p.getCorreo());
         new ControladorProfesor(vProf, sistema, p);
@@ -72,11 +93,10 @@ public class ControladorLogin {
         vista.dispose();
     }
 
-    //Abriendo ventana alumnos
     private void abrirAlumno(Alumno a) {
         VentanaAlumno vAlum = new VentanaAlumno(a.getNombre(), a.getMatricula());
         new ControladorAlumno(vAlum, sistema, a);
         vAlum.setVisible(true);
         vista.dispose();
     }
-}//Fin de la clase 
+}//fin de la clase 

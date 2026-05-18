@@ -72,7 +72,7 @@ public class ServicioReportes {
                     JOptionPane.showMessageDialog(parent,
                             "❌ Error al generar el boletín:\n" + ex.getMessage(),
                             "Error", JOptionPane.ERROR_MESSAGE);
-                }
+                }//Fin try-catch
             }
         };
         worker.execute();
@@ -121,7 +121,7 @@ public class ServicioReportes {
                     JOptionPane.showMessageDialog(parent,
                             "❌ Error al generar el historial:\n" + ex.getMessage(),
                             "Error", JOptionPane.ERROR_MESSAGE);
-                }
+                }//Fin try-catch
             }
         };
         worker.execute();
@@ -188,7 +188,7 @@ public class ServicioReportes {
                     JOptionPane.showMessageDialog(parent,
                             "❌ Error en generación por lotes:\n" + ex.getMessage(),
                             "Error", JOptionPane.ERROR_MESSAGE);
-                }
+                }//Fin try-catch
             }
         };
         worker.execute();
@@ -229,6 +229,6 @@ public class ServicioReportes {
             }//Fin if
         } catch (InterruptedException e) {
             threadPool.shutdownNow();
-        }
+        }//Fin try-catch
     }
 }//Fin de la clase

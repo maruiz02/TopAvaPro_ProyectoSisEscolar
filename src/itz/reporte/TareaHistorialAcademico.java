@@ -9,6 +9,7 @@ import java.util.concurrent.Callable;
 
 public class TareaHistorialAcademico implements Callable<File> {
 
+    //Declaracion de variables 
     private final Alumno alumno;
     private final String carpetaSalida;
     private final ProgresoCallback callback;
@@ -36,7 +37,7 @@ public class TareaHistorialAcademico implements Callable<File> {
         try (BufferedWriter bw = new BufferedWriter(
                 new FileWriter(archivo, java.nio.charset.StandardCharsets.UTF_8))) {
             bw.write(contenido);
-        }
+        }//Fin try
         callback.onProgreso(90);
 
         Thread.sleep(300);

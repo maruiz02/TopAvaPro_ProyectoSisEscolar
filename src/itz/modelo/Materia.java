@@ -46,5 +46,4 @@ public class Materia implements Serializable {
     public void setClave(String clave) {
         this.clave = clave;
     }
-
 }//Fin de la clase

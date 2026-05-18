@@ -1,124 +1,115 @@
 package itz.controlador;
 
 import itz.modelo.*;
-import itz.reporte.ServicioReportes;
-import itz.vista.VentanaAlumno;
-import itz.vista.VentanaLogin;
-import javax.swing.*;
+import itz.util.*;
+import itz.vista.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.Color;
 
 public class ControladorAlumno {
 
-    //Declaracion de variables
+    //Declaracion de las variables 
     private VentanaAlumno vista;
     private SistemaEscolar sistema;
     private Alumno alumno;
-    
-    //Constructor 
+
     public ControladorAlumno(VentanaAlumno vista, SistemaEscolar sistema, Alumno alumnoLogin) {
         this.vista = vista;
         this.sistema = sistema;
         this.alumno = buscarAlumnoActualizado(alumnoLogin.getMatricula());
         if (this.alumno == null) {
             this.alumno = alumnoLogin;
-        }//Fin if 
+        }//fin if 
 
         cargarCalificaciones();
         cargarHorario();
         cargarInscripcion();
         actualizarEstadoInscripcion();
 
-        vista.btnInscribir.addActionListener(e -> inscribirMateria());
-        vista.btnCancelarInscripcion.addActionListener(e -> cancelarInscripcion());
-        vista.btnCerrarSesion.addActionListener(e -> cerrarSesion());
+        vista.getBtnInscribir().addActionListener(e -> inscribirMateria());
+        vista.getBtnCancelarInscripcion().addActionListener(e -> cancelarInscripcion());
+        vista.getBtnCerrarSesion().addActionListener(e -> cerrarSesion());
     }
 
-    //Buscando alumno
     private Alumno buscarAlumnoActualizado(String matricula) {
         SistemaEscolar sistemaFresco = SistemaEscolar.cargarSistema();
         for (Alumno a : sistemaFresco.getAlumnos()) {
             if (a.getMatricula().equalsIgnoreCase(matricula)) {
                 sistema = sistemaFresco;
                 return a;
-            }//Fin if
-        }//Fin for
+            }//fin if
+        }//fin for 
         return null;
     }
 
-    // Parte de las calificaciones
+    // Calificaciones
     private void cargarCalificaciones() {
-        String[] columnas = {"Materia", "Clave", "Calificación", "Estado"};
-        DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
+        DefaultTableModel modelo = new DefaultTableModel(
+                new String[]{"Materia", "Clave", "Calificacion", "Estado"}, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
                 return false;
             }
         };
-
         for (Materia m : alumno.getMaterias()) {
             double cal = obtenerCalificacion(m);
-            String estado = cal == -1 ? "Sin calificar" : (cal >= 6.0 ? "✔ Aprobado" : "✘ Reprobado");
-            String calStr = cal == -1 ? "—" : String.format("%.1f", cal);
+            String estado = cal == -1 ? "Sin calificar" : (cal >= 6.0 ? "Aprobado" : "Reprobado");
+            String calStr = cal == -1 ? "-" : String.format("%.1f", cal);
             modelo.addRow(new Object[]{m.getNombre(), m.getClave(), calStr, estado});
-        }//Fin for
-
-        vista.tablaCalificaciones.setModel(modelo);
+        }//fin for
+        vista.setModeloCalificaciones(modelo);
         mostrarPromedio();
     }
 
-    //Metodo para obtener calificaciones
     private double obtenerCalificacion(Materia materia) {
         for (Calificacion c : alumno.getKardex().getHistorial()) {
             if (c.getMateria().getClave().equalsIgnoreCase(materia.getClave())) {
                 return c.getValor();
-            }//Fin ir
-        }//Fin for
+            }//fin if 
+        }//fin for 
         return -1;
     }
 
-    //Mostrando promedio del alumno
     private void mostrarPromedio() {
         double promedio = alumno.getKardex().calcularPromedio();
-        vista.lblPromedio.setText(String.format("Promedio General: %.2f", promedio));
+        vista.setPromedio(String.format("Promedio General: %.2f", promedio));
     }
 
-    //Parte del horario
+    // ─── Horario ──────────────────────────────────────────────────────────────
     private void cargarHorario() {
-        String[] columnas = {"Materia", "Clave", "Día", "Hora"};
-        DefaultTableModel modelo = new DefaultTableModel(columnas, 0) {
+        DefaultTableModel modelo = new DefaultTableModel(
+                new String[]{"Materia", "Clave", "Dia", "Hora"}, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
                 return false;
             }
         };
-
         for (Materia m : alumno.getMaterias()) {
-            String dia = (m.getHorario() != null) ? m.getHorario().getDia() : "—";
-            String hora = (m.getHorario() != null) ? m.getHorario().getHora() : "—";
+            String dia = (m.getHorario() != null) ? m.getHorario().getDia() : "-";
+            String hora = (m.getHorario() != null) ? m.getHorario().getHora() : "-";
             modelo.addRow(new Object[]{m.getNombre(), m.getClave(), dia, hora});
-        }//Fin for
-
-        vista.tablaHorario.setModel(modelo);
+        }//fin for 
+        vista.setModeloHorario(modelo);
     }
 
-    // Parte de la inscripcion
+    // Para la inscripcion 
     private void actualizarEstadoInscripcion() {
         Alumno fresco = recargarAlumno();
         if (fresco != null) {
             alumno = fresco;
-        }//Fin if 
+        }//fin if 
 
-        boolean permitida = alumno.isInscripcionPermitida();
-        if (permitida) {
-            vista.lblEstadoInscripcion.setText("Inscripción PERMITIDA — puedes seleccionar materias");
-            vista.lblEstadoInscripcion.setForeground(new Color(46, 204, 113));
+        if (alumno.isInscripcionPermitida()) {
+            vista.setEstadoInscripcion(
+                    "Inscripcion PERMITIDA - puedes seleccionar materias",
+                    new Color(46, 204, 113));
+            vista.setBotonesInscripcionHabilitados(true);
         } else {
-            vista.lblEstadoInscripcion.setText("Inscripción Denegada — contacta a un administrador");
-            vista.lblEstadoInscripcion.setForeground(new Color(231, 76, 60));
-        }//Fin If
-        vista.btnInscribir.setEnabled(permitida);
-        vista.btnCancelarInscripcion.setEnabled(permitida);
+            vista.setEstadoInscripcion(
+                    "Inscripcion Denegada - contacta a un administrador",
+                    new Color(231, 76, 60));
+            vista.setBotonesInscripcionHabilitados(false);
+        }//fin if-else
     }
 
     private Alumno recargarAlumno() {
@@ -127,16 +118,15 @@ public class ControladorAlumno {
             if (a.getMatricula().equalsIgnoreCase(alumno.getMatricula())) {
                 sistema = sf;
                 return a;
-            }//Fin if 
-        }//Fin for
+            }//fin if 
+        }//fin for 
         return null;
     }
 
-    //Para cargar la inscripcion del alumnos
     private void cargarInscripcion() {
-        // Materias disponibles 
-        String[] colDisp = {"Materia", "Clave", "Horario"};
-        DefaultTableModel modeloDisp = new DefaultTableModel(colDisp, 0) {
+        // Materias disponibles
+        DefaultTableModel modeloDisp = new DefaultTableModel(
+                new String[]{"Materia", "Clave", "Horario"}, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
                 return false;
@@ -145,15 +135,15 @@ public class ControladorAlumno {
         for (Materia m : sistema.getMaterias()) {
             if (!alumnoTieneMateria(m)) {
                 String h = (m.getHorario() != null)
-                        ? m.getHorario().getDia() + " " + m.getHorario().getHora() : "—";
+                        ? m.getHorario().getDia() + " " + m.getHorario().getHora() : "-";
                 modeloDisp.addRow(new Object[]{m.getNombre(), m.getClave(), h});
-            }//Fin if
-        }//Fin for
-        vista.tablaMaterias.setModel(modeloDisp);
+            }//fin if
+        }//fin for 
+        vista.setModeloMateriasDisponibles(modeloDisp);
 
         // Materias inscritas
-        String[] colInsc = {"Materia", "Clave", "Horario"};
-        DefaultTableModel modeloInsc = new DefaultTableModel(colInsc, 0) {
+        DefaultTableModel modeloInsc = new DefaultTableModel(
+                new String[]{"Materia", "Clave", "Horario"}, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
                 return false;
@@ -161,122 +151,117 @@ public class ControladorAlumno {
         };
         for (Materia m : alumno.getMaterias()) {
             String h = (m.getHorario() != null)
-                    ? m.getHorario().getDia() + " " + m.getHorario().getHora() : "—";
+                    ? m.getHorario().getDia() + " " + m.getHorario().getHora() : "-";
             modeloInsc.addRow(new Object[]{m.getNombre(), m.getClave(), h});
-        }//Fin for
-        vista.tablaMateriasInscritas.setModel(modeloInsc);
+        }//fin for 
+        vista.setModeloMateriasInscritas(modeloInsc);
     }
 
-    //Para ver las materias asignadas al alumnos
     private boolean alumnoTieneMateria(Materia materia) {
         for (Materia m : alumno.getMaterias()) {
             if (m.getClave().equalsIgnoreCase(materia.getClave())) {
                 return true;
-            }//Fin if
-        }//Fin for
+            }//fin if 
+        }//fin for 
         return false;
     }
 
-    //Metodo para verificar inscripcion autorizada
     private void inscribirMateria() {
-        // Re-verificar permiso en tiempo real (por si el admin lo cambió desde otra sesión)
         actualizarEstadoInscripcion();
 
         if (!alumno.isInscripcionPermitida()) {
-            JOptionPane.showMessageDialog(vista,
-                    "No tienes permiso para inscribirte.\nContacta al administrador.");
+            Dialogos.advertencia(vista,
+                    "No tienes permiso para inscribirte.\nContacta al administrador.",
+                    "Inscripcion denegada");
             return;
-        }//Fin if 
+        }//fin if 
 
-        int fila = vista.tablaMaterias.getSelectedRow();
-        if (fila < 0) {
-            JOptionPane.showMessageDialog(vista, "Selecciona una materia disponible para inscribirte.");
+        String clave = vista.getClaveMateriaSelecionadaDisponible();
+        if (clave == null) {
+            Dialogos.advertencia(vista,
+                    "Selecciona una materia disponible para inscribirte.", "Sin seleccion");
             return;
-        }//Fin if
+        }//fin if 
 
-        String clave = (String) vista.tablaMaterias.getValueAt(fila, 1);
         Materia seleccionada = null;
         for (Materia m : sistema.getMaterias()) {
             if (m.getClave().equalsIgnoreCase(clave)) {
                 seleccionada = m;
                 break;
-            }//Fin if
-        }//Fin for
+            }//fin if 
+        }//fin for 
         if (seleccionada == null) {
             return;
-        }//Fin if 
+        }//fin if 
 
         alumno.getMaterias().add(seleccionada);
         if (!seleccionada.getAlumnos().contains(alumno)) {
             seleccionada.getAlumnos().add(alumno);
-        }//Fin if 
+        }//fin if 
 
         sistema.guardarSistema();
         cargarInscripcion();
         cargarCalificaciones();
         cargarHorario();
-        JOptionPane.showMessageDialog(vista,
-                "¡Inscrito correctamente en \"" + seleccionada.getNombre() + "\"!");
+        Dialogos.info(vista,
+                "Inscrito correctamente en \"" + seleccionada.getNombre() + "\".",
+                "Inscripcion exitosa");
     }
 
-    //Metodo para verficar inscripcion denegada
     private void cancelarInscripcion() {
         actualizarEstadoInscripcion();
 
         if (!alumno.isInscripcionPermitida()) {
-            JOptionPane.showMessageDialog(vista, "No tienes permiso para modificar tu inscripción.");
+            Dialogos.advertencia(vista,
+                    "No tienes permiso para modificar tu inscripcion.", "Inscripcion denegada");
             return;
-        }//Fin if
+        }//fin if 
 
-        int fila = vista.tablaMateriasInscritas.getSelectedRow();
-        if (fila < 0) {
-            JOptionPane.showMessageDialog(vista, "Selecciona una materia inscrita para cancelarla.");
+        String clave = vista.getClaveMateriaSelecionadaInscrita();
+        if (clave == null) {
+            Dialogos.advertencia(vista,
+                    "Selecciona una materia inscrita para cancelarla.", "Sin seleccion");
             return;
-        }//Fin if 
+        }//fin if 
 
-        String clave = (String) vista.tablaMateriasInscritas.getValueAt(fila, 1);
         Materia aRemover = null;
         for (Materia m : alumno.getMaterias()) {
             if (m.getClave().equalsIgnoreCase(clave)) {
                 aRemover = m;
                 break;
-            }//Fin if 
-        }//Fin for
+            }//fin if
+        }//fin for 
         if (aRemover == null) {
             return;
-        }//Fin if 
+        }//fin if 
 
-        int confirm = JOptionPane.showConfirmDialog(vista,
-                "¿Cancelar inscripción en \"" + aRemover.getNombre() + "\"?",
-                "Confirmar", JOptionPane.YES_NO_OPTION);
+        final Materia materiaFinal = aRemover;
+        boolean confirma = Dialogos.confirmarPeligro(vista,
+                "Cancelar inscripcion en \"" + materiaFinal.getNombre() + "\"?\n"
+                + "Perderan las calificaciones registradas en esa materia.",
+                "Confirmar cancelacion");
 
-        if (confirm == JOptionPane.YES_OPTION) {
-            alumno.getMaterias().remove(aRemover);
-            aRemover.getAlumnos().remove(alumno);
+        if (confirma) {
+            alumno.getMaterias().remove(materiaFinal);
+            materiaFinal.getAlumnos().remove(alumno);
             alumno.getKardex().getHistorial().removeIf(
                     c -> c.getMateria().getClave().equalsIgnoreCase(clave));
             sistema.guardarSistema();
             cargarInscripcion();
             cargarCalificaciones();
             cargarHorario();
-            JOptionPane.showMessageDialog(vista, "Inscripción cancelada.");
-        }//Fin if
+            Dialogos.info(vista, "Inscripcion cancelada.", "Cancelado");
+        }//fin if 
     }
 
-    // Cerrar sesión y volver al login
+    //Para cerrar la sesion 
     private void cerrarSesion() {
-        int confirmacion = JOptionPane.showConfirmDialog(
-                vista,
-                "¿Deseas cerrar sesión?",
-                "Cerrar Sesión",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE);
-        if (confirmacion == JOptionPane.YES_OPTION) {
+        boolean confirma = Dialogos.confirmar(vista, "¿Deseas cerrar sesion?", "Cerrar Sesion");
+        if (confirma) {
             VentanaLogin vLogin = new VentanaLogin();
             new ControladorLogin(vLogin, sistema);
             vLogin.setVisible(true);
             vista.dispose();
-        }//Fin if
-    }//Fin cerrarSesion
-
-}//Fin de la clase
+        }//fin if
+    }
+}//fin de la clase 

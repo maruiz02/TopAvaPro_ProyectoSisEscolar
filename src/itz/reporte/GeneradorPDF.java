@@ -314,7 +314,7 @@ public class GeneradorPDF {
         } catch (Exception e) {
             // Si falla la impresión PDF, usar el generador HTML
             guardarComoHTML(pj, ruta);
-        }
+        }//Fin try-catch
     }
 
     //Fallback: genera un HTML con diseño equivalente al PDF.

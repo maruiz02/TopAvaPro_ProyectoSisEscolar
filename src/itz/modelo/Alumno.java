@@ -1,41 +1,26 @@
 package itz.modelo;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Alumno implements Serializable {
+public class Alumno extends Usuario {
 
-    //Declaracion de variables
-    private static final long serialVersionUID = 1L;
-    private String nombre, correo, password, matricula;
+    //Declaracion de variables 
+    private static final long serialVersionUID = 2L;
+    private String matricula;
     private ArrayList<Materia> materias;
     private Kardex kardex;
     private boolean inscripcionPermitida = false;
-
+    
     //Constructor
     public Alumno(String nombre, String correo, String password, String matricula) {
-        this.nombre = nombre;
-        this.correo = correo;
-        this.password = password;
+        super(0, nombre, correo, password);   // id no aplica para Alumno solo la matricula 
         this.matricula = matricula;
         this.materias = new ArrayList<>();
         this.kardex = new Kardex();
         this.inscripcionPermitida = false;
     }
 
-    // Getters
-    public String getNombre() {
-        return nombre;
-    }
-
-    public String getCorreo() {
-        return correo;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
+    //Getters 
     public String getMatricula() {
         return matricula;
     }
@@ -52,7 +37,7 @@ public class Alumno implements Serializable {
         return inscripcionPermitida;
     }
 
-    // Setters
+    //Setters
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
@@ -72,4 +57,4 @@ public class Alumno implements Serializable {
     public void setInscripcionPermitida(boolean inscripcionPermitida) {
         this.inscripcionPermitida = inscripcionPermitida;
     }
-}//Fin de la clase
+}
