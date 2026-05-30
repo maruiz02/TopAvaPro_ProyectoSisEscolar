@@ -1,34 +1,42 @@
 package itz.modelo;
 
-import java.util.ArrayList;
-
 public class Profesor extends Usuario {
 
-    //Declaracion de las variables 
-    private static final long serialVersionUID = 2L;
-    private ArrayList<Materia> materias;
+    private String especialidad;
+    private String cedulaProfesional;
 
-    //Constructor
-    public Profesor(String nombre, String correo, String password) {
-        super(0, nombre, correo, password);   // id no aplica para Profesor
-        this.materias = new ArrayList<>();
+    public Profesor() {
     }
 
-    //Getters
-    public ArrayList<Materia> getMaterias() {
-        return materias;
+    public Profesor(int id,
+                    String nombre,
+                    String apellido,
+                    String correo,
+                    String password,
+                    String especialidad,
+                    String cedulaProfesional) {
+
+        super(id, nombre, apellido,
+              correo, password,
+              "PROFESOR");
+
+        this.especialidad = especialidad;
+        this.cedulaProfesional = cedulaProfesional;
     }
 
-    //Setters
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
+    public String getEspecialidad() {
+        return especialidad;
     }
 
-    public void setCorreo(String correo) {
-        this.correo = correo;
+    public void setEspecialidad(String especialidad) {
+        this.especialidad = especialidad;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public String getCedulaProfesional() {
+        return cedulaProfesional;
+    }
+
+    public void setCedulaProfesional(String cedulaProfesional) {
+        this.cedulaProfesional = cedulaProfesional;
     }
 }

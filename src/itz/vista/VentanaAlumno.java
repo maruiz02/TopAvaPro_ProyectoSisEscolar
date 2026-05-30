@@ -4,11 +4,10 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionListener;
 
 public class VentanaAlumno extends JFrame {
 
-    //Campos privados 
+    // Campos privados 
     private JTable tablaCalificaciones;
     private JLabel lblPromedio;
     private JTable tablaHorario;
@@ -16,16 +15,16 @@ public class VentanaAlumno extends JFrame {
     private JTable tablaMateriasInscritas;
     private JButton btnInscribir;
     private JButton btnCancelarInscripcion;
-    private JLabel  lblEstadoInscripcion;
-    private PanelFoto panelFoto;
+    private JLabel lblEstadoInscripcion;
     private JButton btnCerrarSesion;
+    private PanelReportes panelReportes;
 
     private static final Color COLOR_PRIMARIO = new Color(52, 152, 219);
     private static final Color COLOR_PELIGRO  = new Color(231, 76, 60);
     private static final Color COLOR_EXITO    = new Color(46, 204, 113);
     private static final Color COLOR_TEXTO    = Color.WHITE;
     
-    //Constructor
+    // Constructor
     public VentanaAlumno(String nombre, String matricula) {
         setTitle("Panel Alumno - " + nombre + " [" + matricula + "]");
         setSize(950, 620);
@@ -41,6 +40,8 @@ public class VentanaAlumno extends JFrame {
         tabs.addTab("Calificaciones",  construirPanelCalificaciones());
         tabs.addTab("Mi Horario",      construirPanelHorario());
         tabs.addTab("Inscripcion",     construirPanelInscripcion());
+        panelReportes = new PanelReportes();
+        tabs.addTab("Reportes",         panelReportes);
 
         JPanel barraTop = construirBarraTop(nombre);
         setLayout(new BorderLayout());
@@ -48,7 +49,7 @@ public class VentanaAlumno extends JFrame {
         add(tabs,     BorderLayout.CENTER);
     }
 
-    //API PUBLICA PARA EL CONTROLADOR 
+    // API PUBLICA PARA EL CONTROLADOR 
 
     public void setModeloCalificaciones(DefaultTableModel m) { 
         tablaCalificaciones.setModel(m); 
@@ -80,23 +81,25 @@ public class VentanaAlumno extends JFrame {
         int fila = tablaMaterias.getSelectedRow();
         if (fila < 0) {
             return null;
-        }//Fin if 
-        return (String) tablaMaterias.getValueAt(fila, 1);
+        }
+        // Se cambia a la columna 0 que almacena la Clave de la materia
+        return (String) tablaMaterias.getValueAt(fila, 0);
     }
 
     public String getClaveMateriaSelecionadaInscrita() {
         int fila = tablaMateriasInscritas.getSelectedRow();
         if (fila < 0) {
             return null;
-        }//Fin if 
-        return (String) tablaMateriasInscritas.getValueAt(fila, 1);
+        }
+        // Se cambia a la columna 0 que almacena la Clave de la materia
+        return (String) tablaMateriasInscritas.getValueAt(fila, 0);
     }
 
     public JButton getBtnInscribir()           { return btnInscribir; }
     public JButton getBtnCancelarInscripcion() { return btnCancelarInscripcion; }
     public JButton getBtnCerrarSesion()        { return btnCerrarSesion; }
 
-    //Construccion de paneles
+    // Construccion de paneles
 
     private JPanel construirPanelPerfil(String nombre, String matricula) {
         JPanel panel = new JPanel(new BorderLayout());
@@ -106,10 +109,24 @@ public class VentanaAlumno extends JFrame {
         titulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
         titulo.setBorder(new EmptyBorder(15, 0, 5, 0));
 
-        panelFoto = new PanelFoto(nombre, "Matricula: " + matricula, "Alumno");
         JPanel centro = new JPanel(new FlowLayout(FlowLayout.CENTER));
         centro.setBackground(new Color(235, 245, 255));
-        centro.add(panelFoto);
+        
+        // Manejo preventivo del componente personalizado PanelFoto
+        try {
+            PanelFoto panelFoto = new PanelFoto(nombre, "Matricula: " + matricula, "Alumno");
+            centro.add(panelFoto);
+        } catch (Exception e) {
+            JPanel panelFallback = new JPanel(new GridLayout(2, 1, 5, 5));
+            panelFallback.setOpaque(false);
+            JLabel lblN = new JLabel("Nombre: " + nombre);
+            JLabel lblM = new JLabel("Matrícula: " + matricula);
+            lblN.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            lblM.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            panelFallback.add(lblN);
+            panelFallback.add(lblM);
+            centro.add(panelFallback);
+        }
 
         panel.add(titulo,  BorderLayout.NORTH);
         panel.add(centro,  BorderLayout.CENTER);
@@ -211,6 +228,8 @@ public class VentanaAlumno extends JFrame {
         return panel;
     }
 
+    public PanelReportes getPanelReportes() { return panelReportes; }
+
     private JPanel construirBarraTop(String nombre) {
         JPanel barra = new JPanel(new BorderLayout());
         barra.setBackground(new Color(21, 67, 96));
@@ -255,4 +274,4 @@ public class VentanaAlumno extends JFrame {
         });
         return b;
     }
-}//Fin de la clase 
+}

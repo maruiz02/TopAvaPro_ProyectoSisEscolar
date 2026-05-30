@@ -1,102 +1,103 @@
 package itz.controlador;
 
-import itz.modelo.*;
-import itz.util.*;
+import itz.config.ConexionDB;
+import itz.dao.AlumnoDAO;
+import itz.dao.ProfesorDAO;
+import itz.modelo.Alumno;
+import itz.modelo.Profesor;
 import itz.vista.*;
+
 import javax.swing.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 public class ControladorLogin {
 
-    //Declaracion de variables 
-    private static final int MAX_INTENTOS = 5; //Maximo de intentos para logear al usuario 
     private VentanaLogin vista;
-    private SistemaEscolar sistema;
-    private int intentosFallidos = 0;
 
-    public ControladorLogin(VentanaLogin vista, SistemaEscolar sistema) {
+    public ControladorLogin(VentanaLogin vista) {
         this.vista = vista;
-        this.sistema = sistema;
-        // Usamos la API publica en lugar de acceder al campo btnLogin directamente
-        this.vista.addLoginListener(e -> iniciarSesion());
+        vista.addLoginListener(e -> iniciarSesion());
     }
 
-    //Iniciar sesion 
     private void iniciarSesion() {
-        // Bloqueo por intentos
-        if (intentosFallidos >= MAX_INTENTOS) {
-            Dialogos.error(vista,
-                    "Cuenta bloqueada por multiples intentos fallidos.\n"
-                    + "Reinicia la aplicacion para volver a intentarlo.",
-                    "Acceso bloqueado");
-            vista.setBloqueado(true);
+        String correo   = vista.getTxtCorreo().getText().trim();
+        String password = new String(vista.getTxtPassword().getPassword()).trim();
+
+        if (correo.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(vista, "Completa todos los campos.");
             return;
-        }//fin if 
+        }
 
-        String usuario = vista.getUsuario();
-        String pass = vista.getPasswordTexto();
+        try (Connection conn = ConexionDB.conectar()) {
 
-        if (usuario.isEmpty() || pass.isEmpty()) {
-            Dialogos.advertencia(vista,
-                    "Por favor, completa todos los campos.",
-                    "Campos vacios");
-            return;
-        }//fin if 
+            String sql = "SELECT * FROM usuario WHERE correo = ?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, correo);
+            ResultSet rs = ps.executeQuery();
 
-        // Administrador
-        for (Administrador admin : sistema.getAdministradores()) {
-            if (admin.getCorreo().equalsIgnoreCase(usuario)
-                    && admin.getPassword().equals(pass)) {
-                abrirAdmin(admin);
+            if (!rs.next()) {
+                JOptionPane.showMessageDialog(vista, "Usuario no encontrado.");
                 return;
-            }//fin if
-        }//fin for 
+            }
 
-        // Profesor
-        for (Profesor p : sistema.getProfesores()) {
-            if (p.getCorreo().equalsIgnoreCase(usuario)
-                    && p.getPassword().equals(pass)) {
-                abrirProfesor(p);
+            String passwordBD = rs.getString("password_hash");
+            String tipo       = rs.getString("tipo");
+            String nombre     = rs.getString("nombre");
+
+            if (!password.equals(passwordBD)) {
+                JOptionPane.showMessageDialog(vista, "Contraseña incorrecta.");
                 return;
-            }//fin if 
-        }//fin for 
+            }
 
-        // Alumno (login por matricula)
-        for (Alumno a : sistema.getAlumnos()) {
-            if (a.getMatricula().equalsIgnoreCase(usuario)
-                    && a.getPassword().equals(pass)) {
-                abrirAlumno(a);
-                return;
-            }//fin if 
-        }//fin for 
+            switch (tipo) {
 
-        // Credenciales incorrectas
-        intentosFallidos++;
-        int restantes = MAX_INTENTOS - intentosFallidos;
-        Dialogos.avisarIntentoFallido(vista, restantes);
+                case "administrador": {
+                    VentanaAdmin v = new VentanaAdmin(nombre, correo);
+                    new ControladorAdmin(v);
+                    v.setVisible(true);
+                    vista.dispose();
+                    break;
+                }
 
-        if (intentosFallidos >= MAX_INTENTOS) {
-            vista.setBloqueado(true);
-        }//fin if 
+                case "profesor": {
+                    // Cargar modelo Profesor completo desde BD
+                    ProfesorDAO profesorDAO = new ProfesorDAO();
+                    Profesor profesor = profesorDAO.buscarPorCorreo(correo);
+                    if (profesor == null) {
+                        JOptionPane.showMessageDialog(vista, "Error al cargar datos del profesor.");
+                        return;
+                    }
+                    VentanaProfesor v = new VentanaProfesor(nombre, correo);
+                    new ControladorProfesor(v, profesor);
+                    v.setVisible(true);
+                    vista.dispose();
+                    break;
+                }
+
+                case "alumno": {
+                    // Cargar modelo Alumno completo desde BD
+                    AlumnoDAO alumnoDAO = new AlumnoDAO();
+                    Alumno alumno = alumnoDAO.buscarPorCorreo(correo);
+                    if (alumno == null) {
+                        JOptionPane.showMessageDialog(vista, "Error al cargar datos del alumno.");
+                        return;
+                    }
+                    VentanaAlumno v = new VentanaAlumno(alumno.getNombre(), alumno.getMatricula());
+                    new ControladorAlumno(v, alumno);
+                    v.setVisible(true);
+                    vista.dispose();
+                    break;
+                }
+
+                default:
+                    JOptionPane.showMessageDialog(vista, "Tipo de usuario desconocido.");
+            }
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(vista, "Error: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
-
-    private void abrirAdmin(Administrador admin) {
-        VentanaAdmin vAdmin = new VentanaAdmin(admin.getNombre(), admin.getCorreo());
-        new ControladorAdmin(vAdmin, sistema);
-        vAdmin.setVisible(true);
-        vista.dispose();
-    }
-
-    private void abrirProfesor(Profesor p) {
-        VentanaProfesor vProf = new VentanaProfesor(p.getNombre(), p.getCorreo());
-        new ControladorProfesor(vProf, sistema, p);
-        vProf.setVisible(true);
-        vista.dispose();
-    }
-
-    private void abrirAlumno(Alumno a) {
-        VentanaAlumno vAlum = new VentanaAlumno(a.getNombre(), a.getMatricula());
-        new ControladorAlumno(vAlum, sistema, a);
-        vAlum.setVisible(true);
-        vista.dispose();
-    }
-}//fin de la clase 
+}

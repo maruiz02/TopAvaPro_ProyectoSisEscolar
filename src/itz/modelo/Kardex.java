@@ -1,28 +1,55 @@
 package itz.modelo;
 
-import java.io.Serializable;
-import java.util.ArrayList;
+public class Kardex {
 
-public class Kardex implements Serializable {
-    
-    //Declaracion de variables 
-    private ArrayList<Calificacion> historial = new ArrayList<>();
+    private int id;
+    private int alumnoId;
+    private double promedio;
+    private int creditos;
 
-    public void agregarCalificacion(Calificacion c) { 
-        historial.add(c); 
+    public Kardex() {
     }
-    public ArrayList<Calificacion> getHistorial() { 
-        return historial; 
-    }
-    
-    //Calcular el promedio del alumno 
-    public double calcularPromedio() {
-        if (historial.isEmpty()) {
-            return 0.0;
-        }//Fin if 
-        double suma = 0;
-        for (Calificacion c : historial) suma += c.getValor();
-        return suma / historial.size();
-    }
-}//Fin de la clase
 
+    public Kardex(int id,
+                  int alumnoId,
+                  double promedio,
+                  int creditos) {
+
+        this.id = id;
+        this.alumnoId = alumnoId;
+        this.promedio = promedio;
+        this.creditos = creditos;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public int getAlumnoId() {
+        return alumnoId;
+    }
+
+    public void setAlumnoId(int alumnoId) {
+        this.alumnoId = alumnoId;
+    }
+
+    public double getPromedio() {
+        return promedio;
+    }
+
+    public void setPromedio(double promedio) {
+        this.promedio = promedio;
+    }
+
+    public int getCreditos() {
+        return creditos;
+    }
+
+    public void setCreditos(int creditos) {
+        this.creditos = creditos;
+    }
+}

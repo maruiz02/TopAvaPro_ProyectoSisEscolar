@@ -1,49 +1,60 @@
 package itz.modelo;
 
-import java.io.*;
 import java.util.ArrayList;
 
-public class SistemaEscolar implements Serializable {
-    
-    //Declaracion de variables
-    private static final long serialVersionUID = 1L;
-    private ArrayList<Administrador> administradores = new ArrayList<>();
-    private ArrayList<Alumno> alumnos = new ArrayList<>();
-    private ArrayList<Profesor> profesores = new ArrayList<>();
-    private ArrayList<Materia> materias = new ArrayList<>();
-    private static final String ARCHIVO = "sistema.dat";
+public class SistemaEscolar {
 
-    public ArrayList<Administrador> getAdministradores() {
-        return administradores;
+    private ArrayList<Usuario> usuarios;
+    private ArrayList<Materia> materias;
+    private ArrayList<Calificacion> calificaciones;
+    private ArrayList<Horario> horarios;
+    private ArrayList<Kardex> kardex;
+
+    public SistemaEscolar() {
+        usuarios = new ArrayList<>();
+        materias = new ArrayList<>();
+        calificaciones = new ArrayList<>();
+        horarios = new ArrayList<>();
+        kardex = new ArrayList<>();
     }
 
-    public ArrayList<Alumno> getAlumnos() {
-        return alumnos;
+    public ArrayList<Usuario> getUsuarios() {
+        return usuarios;
     }
 
-    public ArrayList<Profesor> getProfesores() {
-        return profesores;
+    public void setUsuarios(ArrayList<Usuario> usuarios) {
+        this.usuarios = usuarios;
     }
 
     public ArrayList<Materia> getMaterias() {
         return materias;
     }
-    
-    //Guardando en el archivo
-    public void guardarSistema() {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(ARCHIVO))) {
-            oos.writeObject(this);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+    public void setMaterias(ArrayList<Materia> materias) {
+        this.materias = materias;
     }
-    
-    //Leyendo datos del archivo
-    public static SistemaEscolar cargarSistema() {
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(ARCHIVO))) {
-            return (SistemaEscolar) ois.readObject();
-        } catch (Exception e) {
-            return new SistemaEscolar();
-        }
+
+    public ArrayList<Calificacion> getCalificaciones() {
+        return calificaciones;
     }
-}//Fin de la clase
+
+    public void setCalificaciones(ArrayList<Calificacion> calificaciones) {
+        this.calificaciones = calificaciones;
+    }
+
+    public ArrayList<Horario> getHorarios() {
+        return horarios;
+    }
+
+    public void setHorarios(ArrayList<Horario> horarios) {
+        this.horarios = horarios;
+    }
+
+    public ArrayList<Kardex> getKardex() {
+        return kardex;
+    }
+
+    public void setKardex(ArrayList<Kardex> kardex) {
+        this.kardex = kardex;
+    }
+}

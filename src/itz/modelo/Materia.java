@@ -1,49 +1,53 @@
 package itz.modelo;
 
-import java.io.Serializable;
-import java.util.ArrayList;
+public class Materia {
 
-public class Materia implements Serializable {
+    private String clave;
+    private String nombre;
+    private String dia;
+    private String hora;
 
-    //Declaracion de varaibles
-    private String nombre, clave;
-    private ArrayList<Alumno> alumnos;
-    private Horario horario;
+    public Materia() {
+    }
 
-    //Constructor
-    public Materia(String nombre, String clave) {
-        this.nombre = nombre;
+    public Materia(String clave, String nombre,
+                   String dia, String hora) {
+
         this.clave = clave;
-        this.alumnos = new ArrayList<>();
-    }
-
-    //Getters
-    public Horario getHorario() {
-        return horario;
-    }
-
-    public String getNombre() {
-        return nombre;
+        this.nombre = nombre;
+        this.dia = dia;
+        this.hora = hora;
     }
 
     public String getClave() {
         return clave;
     }
 
-    public ArrayList<Alumno> getAlumnos() {
-        return alumnos;
+    public void setClave(String clave) {
+        this.clave = clave;
     }
 
-    //Setters
-    public void setHorario(Horario horario) {
-        this.horario = horario;
+    public String getNombre() {
+        return nombre;
     }
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
 
-    public void setClave(String clave) {
-        this.clave = clave;
+    public String getDia() {
+        return dia;
     }
-}//Fin de la clase
+
+    public void setDia(String dia) {
+        this.dia = dia;
+    }
+
+    public String getHora() {
+        return hora;
+    }
+
+    public void setHora(String hora) {
+        this.hora = hora;
+    }
+}

@@ -1,423 +1,385 @@
 package itz.controlador;
 
-import itz.modelo.*;
-import itz.reporte.*;
-import itz.util.*;
-import itz.vista.*;
+import itz.dao.AlumnoDAO;
+import itz.dao.MateriaDAO;
+import itz.dao.ProfesorDAO;
+import itz.modelo.Alumno;
+import itz.modelo.Materia;
+import itz.modelo.Profesor;
+import itz.util.Dialogos;
+import itz.vista.VentanaAdmin;
+import itz.vista.VentanaLogin;
+
 import javax.swing.table.DefaultTableModel;
+import java.util.ArrayList;
 
 public class ControladorAdmin {
-    
-    //Declaracion de las variables 
+
     private VentanaAdmin vista;
-    private SistemaEscolar sistema;
+    private AlumnoDAO alumnoDAO;
+    private ProfesorDAO profesorDAO;
+    private MateriaDAO materiaDAO;
 
-    public ControladorAdmin(VentanaAdmin vista, SistemaEscolar sistema) {
-        this.vista = vista;
-        this.sistema = sistema;
+    public ControladorAdmin(VentanaAdmin vista) {
+        this.vista       = vista;
+        this.alumnoDAO   = new AlumnoDAO();
+        this.profesorDAO = new ProfesorDAO();
+        this.materiaDAO  = new MateriaDAO();
 
-        // Suscripcion a botones a traves de getters 
-        vista.getBtnAgregarAlumno().addActionListener(e -> agregarAlumno());
-        vista.getBtnEditarAlumno().addActionListener(e -> editarAlumno());
-        vista.getBtnEliminarAlumno().addActionListener(e -> eliminarAlumno());
-        vista.getBtnActualizarPermiso().addActionListener(e -> actualizarPermisoInscripcion());
-        vista.getBtnGenerarBoletinAdmin().addActionListener(e -> generarBoletinAlumnoSeleccionado());
-        vista.getBtnReportesLote().addActionListener(e -> generarTodosLosReportes());
-        vista.getBtnAgregarProfesor().addActionListener(e -> agregarProfesor());
-        vista.getBtnEditarProfesor().addActionListener(e -> editarProfesor());
-        vista.getBtnEliminarProfesor().addActionListener(e -> eliminarProfesor());
-        vista.getBtnAgregarMateria().addActionListener(e -> agregarMateria());
-        vista.getBtnCrearHorario().addActionListener(e -> establecerHorario());
-        vista.getBtnAsignarProfesor().addActionListener(e -> asignarMateriaAProfesor());
-        vista.getBtnCerrarSesion().addActionListener(e -> cerrarSesion());
+        // ── Listeners alumnos ──────────────────────────────────────────────
+        vista.getBtnAgregarAlumno()       .addActionListener(e -> agregarAlumno());
+        vista.getBtnEditarAlumno()        .addActionListener(e -> editarAlumno());
+        vista.getBtnEliminarAlumno()      .addActionListener(e -> eliminarAlumno());
+        vista.getBtnActualizarPermiso()   .addActionListener(e -> actualizarPermiso());
 
-        vista.addListenerSeleccionAlumno(e -> {
-            if (!e.getValueIsAdjusting()) {
-                cargarAlumnoEnFormulario();
-            }//fin if
+        // ── Listeners profesores ───────────────────────────────────────────
+        vista.getBtnAgregarProfesor()     .addActionListener(e -> agregarProfesor());
+        vista.getBtnEditarProfesor()      .addActionListener(e -> editarProfesor());
+        vista.getBtnEliminarProfesor()    .addActionListener(e -> eliminarProfesor());
+
+        // ── Listeners materias ─────────────────────────────────────────────
+        vista.getBtnAgregarMateria()      .addActionListener(e -> agregarMateria());
+        vista.getBtnEditarMateria()       .addActionListener(e -> editarMateria());
+        vista.getBtnEliminarMateria()     .addActionListener(e -> eliminarMateria());
+
+        // ── Cerrar sesión ──────────────────────────────────────────────────
+        vista.cerrarSesion(() -> {
+            VentanaLogin vLogin = new VentanaLogin();
+            new ControladorLogin(vLogin);
+            vLogin.setVisible(true);
         });
-        vista.addListenerSeleccionProfesor(e -> {
-            if (!e.getValueIsAdjusting()) {
-                cargarProfesorEnFormulario();
-            }//fin if
-        });
 
+        // ── Cargar tablas al inicio ────────────────────────────────────────
         cargarTablaAlumnos();
         cargarTablaProfesores();
         cargarTablaMaterias();
     }
 
-    // Apartado de los alumnos
+    // ══════════════════════════════════════════════════════════════════════════
+    // ALUMNOS
+    // ══════════════════════════════════════════════════════════════════════════
+
     private void agregarAlumno() {
-        String nombre = vista.getNombreAlumno();
-        String correo = vista.getCorreoAlumno();
-        String pass = vista.getPasswordAlumno();
+        String nombre    = vista.getNombreAlumno();
+        String correo    = vista.getCorreoAlumno();
         String matricula = vista.getMatriculaAlumno();
+        String password  = vista.getPasswordAlumno();
 
-        if (nombre.isEmpty() || correo.isEmpty() || pass.isEmpty() || matricula.isEmpty()) {
-            Dialogos.advertencia(vista, "Completa todos los campos.", "Campos vacios");
+        if (nombre.isEmpty() || correo.isEmpty()
+                || matricula.isEmpty() || password.isEmpty()) {
+            Dialogos.error(vista, "Todos los campos son obligatorios.", "Campos vacíos");
             return;
-        }//fin if
+        }
 
-        String errorPass = ValidadorPassword.validar(pass);
-        if (errorPass != null) {
-            Dialogos.advertencia(vista,
-                    errorPass + "\n\n" + ValidadorPassword.obtenerRequisitos(),
-                    "Contrasena insegura");
+        if (alumnoDAO.existeCorreo(correo)) {
+            Dialogos.error(vista, "El correo ya está registrado.", "Correo duplicado");
             return;
-        }//fin if
+        }
 
-        for (Alumno a : sistema.getAlumnos()) {
-            if (a.getMatricula().equalsIgnoreCase(matricula)) {
-                Dialogos.advertencia(vista, "Ya existe un alumno con esa matricula.", "Duplicado");
-                return;
-            }//fin if
-        }//fin for
+        Alumno alumno = new Alumno();
+        alumno.setNombre(nombre);
+        alumno.setCorreo(correo);
+        alumno.setPassword(password);
+        alumno.setMatricula(matricula);
+        alumno.setInscripcionPermitida(vista.isPermitirInscripcion());
 
-        sistema.getAlumnos().add(new Alumno(nombre, correo, pass, matricula));
-        sistema.guardarSistema();
-        cargarTablaAlumnos();
-        vista.limpiarFormularioAlumno();
-        Dialogos.info(vista, "Alumno agregado correctamente.", "Exito");
+        if (alumnoDAO.insertarAlumno(alumno)) {
+            Dialogos.info(vista, "Alumno agregado correctamente.", "Éxito");
+            vista.limpiarFormularioAlumno();
+            cargarTablaAlumnos();
+        } else {
+            Dialogos.error(vista, "No se pudo agregar el alumno.", "Error");
+        }
     }
 
     private void editarAlumno() {
         int fila = vista.getFilaAlumnoSeleccionada();
-        if (fila < 0) {
-            Dialogos.advertencia(vista, "Selecciona un alumno para editar.", "Sin seleccion");
+        if (fila == -1) {
+            Dialogos.error(vista, "Selecciona un alumno de la tabla.", "Sin selección");
             return;
-        }//fin if
+        }
 
-        String nombre = vista.getNombreAlumno();
-        String correo = vista.getCorreoAlumno();
-        String pass = vista.getPasswordAlumno();
+        String nombre    = vista.getNombreAlumno();
+        String correo    = vista.getCorreoAlumno();
         String matricula = vista.getMatriculaAlumno();
+        String password  = vista.getPasswordAlumno();
 
-        if (nombre.isEmpty() || correo.isEmpty() || pass.isEmpty() || matricula.isEmpty()) {
-            Dialogos.advertencia(vista, "Completa todos los campos.", "Campos vacios");
+        if (nombre.isEmpty() || correo.isEmpty() || matricula.isEmpty()) {
+            Dialogos.error(vista, "Nombre, correo y matrícula son obligatorios.", "Campos vacíos");
             return;
-        }//fin if
-
-        String errorPass = ValidadorPassword.validar(pass);
-        if (errorPass != null) {
-            Dialogos.advertencia(vista,
-                    errorPass + "\n\n" + ValidadorPassword.obtenerRequisitos(),
-                    "Contrasena insegura");
+        }
+        if (password.isEmpty()) {
+            Dialogos.error(vista, "Ingresa la contraseña para confirmar los cambios.", "Contraseña requerida");
             return;
-        }//fin if
+        }
 
-        Alumno alumno = sistema.getAlumnos().get(fila);
+        Alumno alumno = new Alumno();
+        alumno.setId(vista.getIdAlumnoEnFila(fila));
         alumno.setNombre(nombre);
         alumno.setCorreo(correo);
-        alumno.setPassword(pass);
         alumno.setMatricula(matricula);
-        sistema.guardarSistema();
-        cargarTablaAlumnos();
-        vista.limpiarFormularioAlumno();
-        Dialogos.info(vista, "Alumno actualizado correctamente.", "Exito");
+        alumno.setPassword(password);
+        // Mantener el permiso que ya tenía el alumno en la tabla
+        alumno.setInscripcionPermitida(vista.getPermisoAlumnoEnFila(fila));
+
+        if (alumnoDAO.actualizarAlumno(alumno)) {
+            Dialogos.info(vista, "Alumno actualizado.", "Éxito");
+            vista.limpiarFormularioAlumno();
+            cargarTablaAlumnos();
+        } else {
+            Dialogos.error(vista, "No se pudo actualizar el alumno.", "Error");
+        }
     }
 
     private void eliminarAlumno() {
         int fila = vista.getFilaAlumnoSeleccionada();
-        if (fila < 0) {
-            Dialogos.advertencia(vista, "Selecciona un alumno para eliminar.", "Sin seleccion");
+        if (fila == -1) {
+            Dialogos.error(vista, "Selecciona un alumno de la tabla.", "Sin selección");
             return;
-        }//fin if
+        }
 
-        Alumno alumno = sistema.getAlumnos().get(fila);
-        boolean confirma = Dialogos.confirmarPeligro(vista,
-                "Eliminar al alumno \"" + alumno.getNombre() + "\"?\nEsta accion no se puede deshacer.",
-                "Confirmar eliminacion");
+        int id = vista.getIdAlumnoEnFila(fila);
 
-        if (confirma) {
-            sistema.getAlumnos().remove(fila);
-            sistema.guardarSistema();
-            cargarTablaAlumnos();
+        if (alumnoDAO.eliminarAlumno(id)) {
+            Dialogos.info(vista, "Alumno eliminado.", "Éxito");
             vista.limpiarFormularioAlumno();
-            Dialogos.info(vista, "Alumno eliminado.", "Eliminado");
-        }//fin if
+            cargarTablaAlumnos();
+        } else {
+            Dialogos.error(vista, "No se pudo eliminar el alumno.", "Error");
+        }
     }
 
-    private void actualizarPermisoInscripcion() {
+    private void actualizarPermiso() {
         int fila = vista.getFilaAlumnoSeleccionada();
-        if (fila < 0) {
-            Dialogos.advertencia(vista, "Selecciona un alumno para actualizar su permiso.", "Sin seleccion");
+        if (fila == -1) {
+            Dialogos.error(vista, "Selecciona un alumno primero.", "Sin selección");
             return;
-        }//fin if
-        Alumno alumno = sistema.getAlumnos().get(fila);
-        boolean permitir = vista.isPermitirInscripcion();
-        alumno.setInscripcionPermitida(permitir);
-        sistema.guardarSistema();
-        cargarTablaAlumnos();
-        String msg = permitir
-                ? "Inscripcion PERMITIDA para " + alumno.getNombre()
-                : "Inscripcion DENEGADA para " + alumno.getNombre();
-        Dialogos.info(vista, msg, "Permiso actualizado");
+        }
+
+        String matricula = vista.getMatriculaAlumnoEnFila(fila);
+        boolean permitido = vista.isPermitirInscripcion();
+
+        if (alumnoDAO.actualizarPermisoInscripcion(matricula, permitido)) {
+            String msg = permitido ? "Inscripción habilitada." : "Inscripción deshabilitada.";
+            Dialogos.info(vista, msg, "Éxito");
+            cargarTablaAlumnos();
+        } else {
+            Dialogos.error(vista, "No se pudo actualizar el permiso.", "Error");
+        }
     }
 
-    private void cargarAlumnoEnFormulario() {
-        int fila = vista.getFilaAlumnoSeleccionada();
-        if (fila < 0) {
-            return;
-        }//fin if
-        Alumno alumno = sistema.getAlumnos().get(fila);
-        vista.setFormularioAlumno(
-                alumno.getNombre(),
-                alumno.getCorreo(),
-                alumno.getPassword(),
-                alumno.getMatricula(),
-                alumno.isInscripcionPermitida());
-    }
+    // ══════════════════════════════════════════════════════════════════════════
+    // PROFESORES
+    // ══════════════════════════════════════════════════════════════════════════
 
-    public void cargarTablaAlumnos() {
-        DefaultTableModel modelo = new DefaultTableModel(
-                new String[]{"Nombre", "Correo", "Matricula", "Inscripcion"}, 0) {
-            @Override
-            public boolean isCellEditable(int r, int c) {
-                return false;
-            }
-        };
-        for (Alumno a : sistema.getAlumnos()) {
-            modelo.addRow(new Object[]{
-                a.getNombre(), a.getCorreo(), a.getMatricula(),
-                a.isInscripcionPermitida() ? "Permitida" : "Denegada"
-            });
-        }//fin for
-        vista.setModeloAlumnos(modelo);
-    }
-
-    // ─── Profesores ───────────────────────────────────────────────────────────
     private void agregarProfesor() {
-        String nombre = vista.getNombreProfesor();
-        String correo = vista.getCorreoProfesor();
-        String pass = vista.getPasswordProfesor();
+        String nombre   = vista.getNombreProfesor();
+        String correo   = vista.getCorreoProfesor();
+        String password = vista.getPasswordProfesor();
 
-        if (nombre.isEmpty() || correo.isEmpty() || pass.isEmpty()) {
-            Dialogos.advertencia(vista, "Completa todos los campos.", "Campos vacios");
+        if (nombre.isEmpty() || correo.isEmpty() || password.isEmpty()) {
+            Dialogos.error(vista, "Todos los campos son obligatorios.", "Campos vacíos");
             return;
-        }//fin if
+        }
 
-        String errorPass = ValidadorPassword.validar(pass);
-        if (errorPass != null) {
-            Dialogos.advertencia(vista,
-                    errorPass + "\n\n" + ValidadorPassword.obtenerRequisitos(),
-                    "Contrasena insegura");
-            return;
-        }//fin if
+        Profesor profesor = new Profesor();
+        profesor.setNombre(nombre);
+        profesor.setCorreo(correo);
+        profesor.setPassword(password);
 
-        for (Profesor p : sistema.getProfesores()) {
-            if (p.getCorreo().equalsIgnoreCase(correo)) {
-                Dialogos.advertencia(vista, "Ya existe un profesor con ese correo.", "Duplicado");
-                return;
-            }//fin if
-        }//fin gor
-
-        sistema.getProfesores().add(new Profesor(nombre, correo, pass));
-        sistema.guardarSistema();
-        cargarTablaProfesores();
-        vista.limpiarFormularioProfesor();
-        Dialogos.info(vista, "Profesor agregado correctamente.", "Exito");
+        if (profesorDAO.insertarProfesor(profesor)) {
+            Dialogos.info(vista, "Profesor agregado.", "Éxito");
+            vista.limpiarFormularioProfesor();
+            cargarTablaProfesores();
+        } else {
+            Dialogos.error(vista, "No se pudo agregar el profesor.", "Error");
+        }
     }
 
     private void editarProfesor() {
         int fila = vista.getFilaProfesorSeleccionada();
-        if (fila < 0) {
-            Dialogos.advertencia(vista, "Selecciona un profesor para editar.", "Sin seleccion");
+        if (fila == -1) {
+            Dialogos.error(vista, "Selecciona un profesor de la tabla.", "Sin selección");
             return;
-        }//fin if 
+        }
 
-        String nombre = vista.getNombreProfesor();
-        String correo = vista.getCorreoProfesor();
-        String pass = vista.getPasswordProfesor();
+        String nombre   = vista.getNombreProfesor();
+        String correo   = vista.getCorreoProfesor();
+        String password = vista.getPasswordProfesor();
 
-        if (nombre.isEmpty() || correo.isEmpty() || pass.isEmpty()) {
-            Dialogos.advertencia(vista, "Completa todos los campos.", "Campos vacios");
+        if (nombre.isEmpty() || correo.isEmpty() || password.isEmpty()) {
+            Dialogos.error(vista, "Todos los campos son obligatorios.", "Campos vacíos");
             return;
-        }//fin if 
+        }
 
-        String errorPass = ValidadorPassword.validar(pass);
-        if (errorPass != null) {
-            Dialogos.advertencia(vista,
-                    errorPass + "\n\n" + ValidadorPassword.obtenerRequisitos(),
-                    "Contrasena insegura");
-            return;
-        }//fin if 
-
-        Profesor profesor = sistema.getProfesores().get(fila);
+        Profesor profesor = new Profesor();
+        profesor.setId(vista.getIdProfesorEnFila(fila));
         profesor.setNombre(nombre);
         profesor.setCorreo(correo);
-        profesor.setPassword(pass);
-        sistema.guardarSistema();
-        cargarTablaProfesores();
-        vista.limpiarFormularioProfesor();
-        Dialogos.info(vista, "Profesor actualizado correctamente.", "Exito");
+        profesor.setPassword(password);
+
+        if (profesorDAO.actualizarProfesor(profesor)) {
+            Dialogos.info(vista, "Profesor actualizado.", "Éxito");
+            vista.limpiarFormularioProfesor();
+            cargarTablaProfesores();
+        } else {
+            Dialogos.error(vista, "No se pudo actualizar el profesor.", "Error");
+        }
     }
 
     private void eliminarProfesor() {
         int fila = vista.getFilaProfesorSeleccionada();
-        if (fila < 0) {
-            Dialogos.advertencia(vista, "Selecciona un profesor para eliminar.", "Sin seleccion");
+        if (fila == -1) {
+            Dialogos.error(vista, "Selecciona un profesor de la tabla.", "Sin selección");
             return;
-        }//fin if
+        }
 
-        Profesor profesor = sistema.getProfesores().get(fila);
-        boolean confirma = Dialogos.confirmarPeligro(vista,
-                "Eliminar al profesor \"" + profesor.getNombre() + "\"?\nEsta accion no se puede deshacer.",
-                "Confirmar eliminacion");
+        int id = vista.getIdProfesorEnFila(fila);
 
-        if (confirma) {
-            sistema.getProfesores().remove(fila);
-            sistema.guardarSistema();
-            cargarTablaProfesores();
+        if (profesorDAO.eliminarProfesor(id)) {
+            Dialogos.info(vista, "Profesor eliminado.", "Éxito");
             vista.limpiarFormularioProfesor();
-            Dialogos.info(vista, "Profesor eliminado.", "Eliminado");
-        }//fin if 
+            cargarTablaProfesores();
+        } else {
+            Dialogos.error(vista, "No se pudo eliminar el profesor.", "Error");
+        }
     }
 
-    private void cargarProfesorEnFormulario() {
-        int fila = vista.getFilaProfesorSeleccionada();
-        if (fila < 0) {
+    // ══════════════════════════════════════════════════════════════════════════
+    // MATERIAS
+    // ══════════════════════════════════════════════════════════════════════════
+
+    private void agregarMateria() {
+        String clave  = vista.getClaveMateria();
+        String nombre = vista.getNombreMateria();
+
+        if (clave.isEmpty() || nombre.isEmpty()) {
+            Dialogos.error(vista, "La clave y el nombre de la materia son obligatorios.", "Campos vacíos");
             return;
-        }//fin if 
-        Profesor profesor = sistema.getProfesores().get(fila);
-        vista.setFormularioProfesor(
-                profesor.getNombre(),
-                profesor.getCorreo(),
-                profesor.getPassword());
+        }
+
+        Materia materia = new Materia();
+        materia.setClave(clave);
+        materia.setNombre(nombre);
+        materia.setDia(vista.getDiaHorario());
+        materia.setHora(vista.getHoraHorario());
+
+        if (materiaDAO.insertarMateria(materia)) {
+            Dialogos.info(vista, "Materia agregada.", "Éxito");
+            vista.limpiarFormularioMateria();
+            cargarTablaMaterias();
+        } else {
+            Dialogos.error(vista, "No se pudo agregar la materia. ¿La clave ya existe?", "Error");
+        }
     }
 
-    public void cargarTablaProfesores() {
+    private void editarMateria() {
+        int fila = vista.getFilaMateriaSeleccionada();
+        if (fila == -1) {
+            Dialogos.error(vista, "Selecciona una materia de la tabla.", "Sin selección");
+            return;
+        }
+
+        String nombre = vista.getNombreMateria();
+        if (nombre.isEmpty()) {
+            Dialogos.error(vista, "El nombre de la materia no puede estar vacío.", "Campo vacío");
+            return;
+        }
+
+        Materia materia = new Materia();
+        // La clave viene de la fila seleccionada, no del campo (no se puede cambiar la PK)
+        materia.setClave(vista.getClaveMateriaEnFila(fila));
+        materia.setNombre(nombre);
+        materia.setDia(vista.getDiaHorario());
+        materia.setHora(vista.getHoraHorario());
+
+        if (materiaDAO.actualizarMateria(materia)) {
+            Dialogos.info(vista, "Materia actualizada.", "Éxito");
+            vista.limpiarFormularioMateria();
+            cargarTablaMaterias();
+        } else {
+            Dialogos.error(vista, "No se pudo actualizar la materia.", "Error");
+        }
+    }
+
+    private void eliminarMateria() {
+        int fila = vista.getFilaMateriaSeleccionada();
+        if (fila == -1) {
+            Dialogos.error(vista, "Selecciona una materia de la tabla.", "Sin selección");
+            return;
+        }
+
+        String clave = vista.getClaveMateriaEnFila(fila);
+
+        if (materiaDAO.eliminarMateria(clave)) {
+            Dialogos.info(vista, "Materia eliminada.", "Éxito");
+            vista.limpiarFormularioMateria();
+            cargarTablaMaterias();
+        } else {
+            Dialogos.error(vista, "No se pudo eliminar la materia.", "Error");
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // CARGA DE TABLAS
+    // ══════════════════════════════════════════════════════════════════════════
+
+    private void cargarTablaAlumnos() {
+        ArrayList<Alumno> lista = alumnoDAO.listarAlumnos();
+
         DefaultTableModel modelo = new DefaultTableModel(
-                new String[]{"Nombre", "Correo"}, 0) {
+                new String[]{"ID", "Nombre", "Matricula", "Correo", "Permiso"}, 0) {
+            // La columna Permiso es booleana → JTable la renderiza como checkbox
             @Override
-            public boolean isCellEditable(int r, int c) {
-                return false;
+            public Class<?> getColumnClass(int col) {
+                return col == 4 ? Boolean.class : String.class;
             }
+            @Override
+            public boolean isCellEditable(int r, int c) { return false; }
         };
-        for (Profesor p : sistema.getProfesores()) {
-            modelo.addRow(new Object[]{p.getNombre(), p.getCorreo()});
-        }//fin for 
+
+        for (Alumno a : lista) {
+            modelo.addRow(new Object[]{
+                a.getId(),
+                a.getNombre(),
+                a.getMatricula(),
+                a.getCorreo(),
+                a.isInscripcionPermitida()
+            });
+        }
+        vista.setModeloAlumnos(modelo);
+    }
+
+    private void cargarTablaProfesores() {
+        ArrayList<Profesor> lista = profesorDAO.listarProfesores();
+
+        DefaultTableModel modelo = new DefaultTableModel(
+                new String[]{"ID", "Nombre", "Correo"}, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+
+        for (Profesor p : lista) {
+            modelo.addRow(new Object[]{ p.getId(), p.getNombre(), p.getCorreo() });
+        }
         vista.setModeloProfesores(modelo);
     }
 
-    // Materias y horiarios para la organizacion del sistema 
-    private void agregarMateria() {
-        String nombre = vista.getNombreMateria();
-        String clave = vista.getClaveMateria();
-        if (nombre.isEmpty() || clave.isEmpty()) {
-            Dialogos.advertencia(vista, "Campos vacios.", "Campos vacios");
-            return;
-        }//fin if
-        sistema.getMaterias().add(new Materia(nombre, clave));
-        sistema.guardarSistema();
-        cargarTablaMaterias();
-        Dialogos.info(vista, "Materia agregada correctamente.", "Exito");
-    }
+    private void cargarTablaMaterias() {
+        ArrayList<Materia> lista = materiaDAO.listarMaterias();
 
-    private void establecerHorario() {
-        String clave = vista.getClaveMateriaHorario();
-        String dia = vista.getDiaHorario();
-        String hora = vista.getHoraHorario();
-        for (Materia m : sistema.getMaterias()) {
-            if (m.getClave().equalsIgnoreCase(clave)) {
-                m.setHorario(new Horario(dia, hora));
-                sistema.guardarSistema();
-                cargarTablaMaterias();
-                Dialogos.info(vista, "Horario establecido para la materia \"" + m.getNombre() + "\".", "Exito");
-                return;
-            }//fin if 
-        }//fin for
-        Dialogos.error(vista, "Materia con clave \"" + clave + "\" no encontrada.", "No encontrada");
-    }
-
-    private void asignarMateriaAProfesor() {
-        String clave = vista.getClaveMateriaHorario();
-        String correo = vista.getCorreoProfesorAsignar();
-        Materia mat = null;
-        Profesor prof = null;
-
-        for (Materia m : sistema.getMaterias()) {
-            if (m.getClave().equalsIgnoreCase(clave)) {
-                mat = m;
-            }//fin if  
-        }//fin for 
-        for (Profesor p : sistema.getProfesores()) {
-            if (p.getCorreo().equalsIgnoreCase(correo)) {
-                prof = p;
-            }//fin if 
-        }//fin for
-
-        if (mat == null || prof == null) {
-            Dialogos.error(vista, "Datos incorrectos. Verifica clave y correo.", "Error");
-            return;
-        }//fin if 
-        for (Materia m : prof.getMaterias()) {
-            if (m.getClave().equalsIgnoreCase(clave)) {
-                Dialogos.advertencia(vista, "Esa materia ya esta asignada a ese profesor.", "Duplicado");
-                return;
-            }//fin if 
-        }//fin for 
-        prof.getMaterias().add(mat);
-        sistema.guardarSistema();
-        Dialogos.info(vista, "Materia asignada al profesor correctamente.", "Exito");
-    }
-
-    public void cargarTablaMaterias() {
         DefaultTableModel modelo = new DefaultTableModel(
-                new String[]{"Nombre", "Clave", "Horario"}, 0) {
-            @Override
-            public boolean isCellEditable(int r, int c) {
-                return false;
-            }
+                new String[]{"Clave", "Nombre", "Día", "Hora"}, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
         };
-        for (Materia m : sistema.getMaterias()) {
-            String h = (m.getHorario() != null)
-                    ? m.getHorario().getDia() + " " + m.getHorario().getHora()
-                    : "Sin horario";
-            modelo.addRow(new Object[]{m.getNombre(), m.getClave(), h});
-        }//fin for 
+
+        for (Materia m : lista) {
+            modelo.addRow(new Object[]{
+                m.getClave(),
+                m.getNombre(),
+                m.getDia()  != null ? m.getDia()  : "",
+                m.getHora() != null ? m.getHora() : ""
+            });
+        }
         vista.setModeloMaterias(modelo);
     }
-
-    // ─── Reportes ─────────────────────────────────────────────────────────────
-    private void generarBoletinAlumnoSeleccionado() {
-        int fila = vista.getFilaAlumnoSeleccionada();
-        if (fila < 0) {
-            Dialogos.advertencia(vista, "Selecciona un alumno de la tabla primero.", "Sin seleccion");
-            return;
-        }//fin if 
-        String matricula = vista.getMatriculaAlumnoEnFila(fila);
-        Alumno seleccionado = null;
-        for (Alumno a : sistema.getAlumnos()) {
-            if (a.getMatricula().equalsIgnoreCase(matricula)) {
-                seleccionado = a;
-                break;
-            }//fin if 
-        }//fin for 
-        if (seleccionado == null) {
-            return;
-        }//fin if 
-        ServicioReportes.generarBoletinAsync(seleccionado, vista.getBtnGenerarBoletinAdmin());
-    }
-
-    private void generarTodosLosReportes() {
-        boolean confirma = Dialogos.confirmar(vista,
-                "Se generaran boletines para " + sistema.getAlumnos().size()
-                + " alumnos de forma paralela.\n¿Continuar?",
-                "Generacion en lote");
-        if (confirma) {
-            ServicioReportes.generarReportesLoteAsync(sistema, vista.getBtnReportesLote());
-        }//fin if 
-    }
-
-    // Para cerrar la sesion 
-    private void cerrarSesion() {
-        boolean confirma = Dialogos.confirmar(vista, "¿Deseas cerrar sesion?", "Cerrar Sesion");
-        if (confirma) {
-            VentanaLogin vLogin = new VentanaLogin();
-            new ControladorLogin(vLogin, sistema);
-            vLogin.setVisible(true);
-            vista.dispose();
-        }//fin if 
-    }
-}//fin de la clase 
+}

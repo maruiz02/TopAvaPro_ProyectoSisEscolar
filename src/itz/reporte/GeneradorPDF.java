@@ -1,335 +1,292 @@
 package itz.reporte;
 
-import itz.modelo.*;
-import java.awt.*;
-import java.awt.geom.Rectangle2D;
-import java.awt.print.*;
-import java.io.*;
+import itz.dao.CalificacionDAO;
+import itz.modelo.Alumno;
+
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 
+/**
+ * Genera reportes en formato HTML para cada alumno.
+ * Consulta la BD a través de CalificacionDAO (vista v_kardex).
+ */
 public class GeneradorPDF {
 
-    // Constantes de estilo
-    private static final Color COLOR_HEADER = new Color(41, 128, 185);
-    private static final Color COLOR_FILA_PAR = new Color(236, 240, 241);
-    private static final Color COLOR_APROBADO = new Color(39, 174, 96);
-    private static final Color COLOR_REPROBADO = new Color(192, 57, 43);
+    // Formato de fecha en español: "29 de abril de 2026"
+    private static final DateTimeFormatter FMT_FECHA =
+            DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", new Locale("es", "MX"));
 
-    private static final Font FUENTE_TITULO = new Font("Arial", Font.BOLD, 18);
-    private static final Font FUENTE_SUBTITULO = new Font("Arial", Font.BOLD, 13);
-    private static final Font FUENTE_NORMAL = new Font("Arial", Font.PLAIN, 11);
-    private static final Font FUENTE_TABLA = new Font("Arial", Font.PLAIN, 10);
-    private static final Font FUENTE_NEGRITA = new Font("Arial", Font.BOLD, 11);
+    // Sufijo del archivo: "20260429"
+    private static final DateTimeFormatter FMT_ARCHIVO =
+            DateTimeFormatter.ofPattern("yyyyMMdd");
 
-    // Constructor privado: clase utilitaria
-    private GeneradorPDF() {
+    // Calificacion minima para aprobar (escala 0-100)
+    private static final double MINIMO_APROBATORIO = 60.0;
+
+    // ─── CSS compartido ───────────────────────────────────────────────────────
+    private static String css() {
+        return """
+            <style>
+              * { box-sizing: border-box; margin: 0; padding: 0; }
+              body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6f8; }
+              .contenedor { max-width: 850px; margin: 30px auto; background: white;
+                            border-radius: 8px; overflow: hidden;
+                            box-shadow: 0 4px 20px rgba(0,0,0,.15); }
+              .encabezado { background: linear-gradient(135deg, #2980b9, #1a5276);
+                            color: white; padding: 25px 30px; }
+              .encabezado h1 { font-size: 22px; margin-bottom: 4px; }
+              .encabezado h2 { font-size: 14px; font-weight: 400; opacity: .85; }
+              .cuerpo { padding: 30px; }
+              .datos { display: grid; grid-template-columns: 1fr 1fr;
+                       gap: 8px 20px; margin-bottom: 25px; padding: 15px;
+                       background: #eaf4fc; border-left: 4px solid #2980b9;
+                       border-radius: 4px; }
+              .datos p { font-size: 13px; color: #34495e; }
+              .datos span { font-weight: 600; }
+              table { width: 100%; border-collapse: collapse; font-size: 13px; }
+              th { background: #34495e; color: white; padding: 10px 8px; text-align: left; }
+              tr.par   td { background: #ecf0f1; }
+              tr.impar td { background: #ffffff; }
+              td { padding: 9px 8px; border-bottom: 1px solid #dde; }
+              .aprobado  { color: #27ae60; font-weight: 700; }
+              .reprobado { color: #c0392b; font-weight: 700; }
+              .promedio { margin-top: 20px; padding: 14px 20px;
+                          background: #fafafa; border-radius: 6px; }
+              .promedio-ok  { border: 2px solid #27ae60; }
+              .promedio-ok  h3 { font-size: 18px; color: #27ae60; }
+              .promedio-mal { border: 2px solid #c0392b; }
+              .promedio-mal h3 { font-size: 18px; color: #c0392b; }
+              .pie { padding: 15px 30px; background: #ecf0f1; font-size: 11px;
+                     color: #7f8c8d; display: flex; justify-content: space-between; }
+              @media print {
+                body { background: white; }
+                .contenedor { box-shadow: none; margin: 0; }
+              }
+            </style>
+            """;
     }
 
-    //Generador de Boletin (calificaciones) del alumno
-    public static void generarBoletin(Alumno alumno,
-            String rutaSalida,
-            ProgresoCallback cb) throws Exception {
-        cb.onProgreso(10);
+    // ─── Boletin de calificaciones ────────────────────────────────────────────
 
-        // Preparamos los datos antes de abrir el stream
-        List<Calificacion> calificaciones = alumno.getKardex().getHistorial();
-        double promedio = alumno.getKardex().calcularPromedio();
-        String fecha = LocalDate.now()
-                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-        cb.onProgreso(25);
+    /**
+     * Genera el boletin HTML del alumno con sus calificaciones actuales desde la BD.
+     *
+     * @param alumno  Objeto con nombre, matricula y correo
+     * @param ruta    Ruta completa del archivo a escribir
+     */
+    public static void generarBoletin(Alumno alumno, String ruta) throws IOException {
 
-        // Construimos el documento página a página
-        try (PrintStream ps = new PrintStream(
-                new BufferedOutputStream(new FileOutputStream(rutaSalida)))) {
-            renderBoletin(alumno, calificaciones, promedio, fecha,
-                    rutaSalida, cb);
+        CalificacionDAO dao = new CalificacionDAO();
+        // kardex: [nombre_materia, valor, fecha_registro, promedio_general]
+        List<Object[]> kardex = dao.obtenerKardex(alumno.getMatricula());
+
+        String fechaHoy  = LocalDate.now().format(FMT_FECHA);
+        double promedio  = kardex.isEmpty() ? 0.0
+                         : (double) kardex.get(kardex.size() - 1)[3];
+
+        StringBuilder filas = new StringBuilder();
+        int contador = 1;
+        for (Object[] fila : kardex) {
+            String nombreMateria = (String)  fila[0];
+            double valor         = (double)  fila[1];
+            // clave_materia no viene de obtenerKardex; consultamos clave por nombre
+            // Para no romper la firma del DAO existente, usamos el índice del kardex
+            boolean aprobado = valor >= MINIMO_APROBATORIO;
+            String clase     = aprobado ? "aprobado" : "reprobado";
+            String estado    = aprobado ? "✔ APROBADO" : "✘ REPROBADO";
+            String paridad   = (contador % 2 == 0) ? "par" : "impar";
+
+            filas.append(String.format(
+                "<tr class='%s'><td>%d</td><td>%s</td>"
+                + "<td class='%s'>%.1f</td><td class='%s'>%s</td></tr>\n",
+                paridad, contador, esc(nombreMateria),
+                clase, valor, clase, estado));
+            contador++;
         }
-        cb.onProgreso(100);
+
+        if (filas.isEmpty()) {
+            filas.append("<tr><td colspan='4' style='text-align:center;color:#999'>"
+                       + "Sin calificaciones registradas</td></tr>");
+        }
+
+        boolean promedioOk = promedio >= MINIMO_APROBATORIO;
+        String clsPromedio = promedioOk ? "promedio-ok" : "promedio-mal";
+        String txtPromedio = promedioOk ? "APROBADO" : "REPROBADO";
+
+        String html = "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n"
+            + "<meta charset=\"UTF-8\">\n"
+            + "<title>Boletín de Calificaciones — " + esc(alumno.getNombre()) + "</title>\n"
+            + css()
+            + "</head>\n<body>\n"
+            + "<div class=\"contenedor\">\n"
+            + "  <div class=\"encabezado\">\n"
+            + "    <h1>&#127891; Instituto Tecnológico de Zacatecas</h1>\n"
+            + "    <h2>Boletín Oficial de Calificaciones</h2>\n"
+            + "  </div>\n"
+            + "  <div class=\"cuerpo\">\n"
+            + "    <div class=\"datos\">\n"
+            + "      <p>Alumno: <span>" + esc(alumno.getNombre()) + "</span></p>\n"
+            + "      <p>Matrícula: <span>" + esc(alumno.getMatricula()) + "</span></p>\n"
+            + "      <p>Correo: <span>" + esc(alumno.getCorreo()) + "</span></p>\n"
+            + "      <p>Fecha de emisión: <span>" + fechaHoy + "</span></p>\n"
+            + "    </div>\n"
+            + "    <h3 style=\"margin-bottom:12px;color:#2c3e50;\">&#128203; Calificaciones por Materia</h3>\n"
+            + "    <table>\n"
+            + "      <thead><tr><th>#</th><th>Materia</th>"
+            + "<th>Calificación</th><th>Estado</th></tr></thead>\n"
+            + "      <tbody>" + filas + "</tbody>\n"
+            + "    </table>\n"
+            + "    <div class=\"promedio " + clsPromedio + "\">\n"
+            + "      <h3>Promedio General: " + String.format("%.2f", promedio)
+            + " — " + txtPromedio + "</h3>\n"
+            + "    </div>\n"
+            + "  </div>\n"
+            + "  <div class=\"pie\">\n"
+            + "    <span>Documento generado automáticamente por SisGesco · " + fechaHoy + "</span>\n"
+            + "    <span>Firma: ________________________</span>\n"
+            + "  </div>\n"
+            + "</div>\n</body>\n</html>\n";
+
+        try (FileWriter fw = new FileWriter(ruta)) {
+            fw.write(html);
+        }
     }
 
-    // Generar historial academico (kardex)
-    public static void generarHistorial(Alumno alumno,
-            String rutaSalida,
-            ProgresoCallback cb) throws Exception {
-        cb.onProgreso(10);
+    // ─── Historial académico ──────────────────────────────────────────────────
 
-        List<Calificacion> historial = alumno.getKardex().getHistorial();
-        double promedio = alumno.getKardex().calcularPromedio();
-        long aprobadas = historial.stream()
-                .filter(c -> c.getValor() >= 6.0).count();
-        long reprobadas = historial.size() - aprobadas;
-        String fecha = LocalDate.now()
-                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-        cb.onProgreso(30);
+    /**
+     * Genera el historial académico HTML: todas las materias inscritas,
+     * con o sin calificación (muestra "Pendiente" si aún no tiene nota).
+     */
+    public static void generarHistorial(Alumno alumno, String ruta) throws IOException {
 
-        renderHistorial(alumno, historial, promedio,
-                aprobadas, reprobadas, fecha, rutaSalida, cb);
-        cb.onProgreso(100);
-    }
+        CalificacionDAO calDAO = new CalificacionDAO();
+        itz.dao.MateriaDAO matDAO = new itz.dao.MateriaDAO();
 
-    //Renderizacion
-    private static void renderBoletin(Alumno alumno,
-            List<Calificacion> cals,
-            double promedio,
-            String fecha,
-            String ruta,
-            ProgresoCallback cb) throws Exception {
-        // Creamos el trabajo de impresión hacia archivo
-        PrinterJob pj = PrinterJob.getPrinterJob();
-        PageFormat pf = pj.defaultPage();
-        pf.setOrientation(PageFormat.PORTRAIT);
+        // Materias inscritas: [clave, nombre, horario]
+        List<Object[]> inscritas = matDAO.obtenerMateriasInscritasParaTabla(alumno.getMatricula());
+        // Kardex: [nombre_materia, valor, fecha, promedio]
+        List<Object[]> kardex   = calDAO.obtenerKardex(alumno.getMatricula());
 
-        pj.setPrintable((graphics, pageFormat, pageIndex) -> {
-            if (pageIndex > 0) {
-                return Printable.NO_SUCH_PAGE;
-            }//Fin if
+        // Crear mapa nombre -> calificacion para cruzar
+        java.util.Map<String, Double> mapaCal = new java.util.LinkedHashMap<>();
+        double promedio = 0.0;
+        for (Object[] k : kardex) {
+            mapaCal.put((String) k[0], (double) k[1]);
+            promedio = (double) k[3];
+        }
 
-            Graphics2D g = (Graphics2D) graphics;
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
+        String fechaHoy = LocalDate.now().format(FMT_FECHA);
 
-            double ox = pageFormat.getImageableX();
-            double oy = pageFormat.getImageableY();
-            double w = pageFormat.getImageableWidth();
-            g.translate(ox, oy);
+        StringBuilder filas = new StringBuilder();
+        int contador = 1;
+        int aprobadas = 0, reprobadas = 0, pendientes = 0;
 
-            int y = 0;
+        for (Object[] mat : inscritas) {
+            String nombre  = (String) mat[1];
+            String clave   = (String) mat[0];
+            String horario = (String) mat[2];
+            String paridad = (contador % 2 == 0) ? "par" : "impar";
 
-            // Encabezado
-            y = dibujarEncabezado(g, w, y, "BOLETÍN DE CALIFICACIONES");
-            cb.onProgreso(50);
-
-            // Datos del alumno 
-            y += 20;
-            g.setFont(FUENTE_NEGRITA);
-            g.setColor(Color.DARK_GRAY);
-            g.drawString("Alumno:   " + alumno.getNombre(), 10, y += 18);
-            g.drawString("Matrícula: " + alumno.getMatricula(), 10, y += 18);
-            g.drawString("Correo:   " + alumno.getCorreo(), 10, y += 18);
-            g.drawString("Fecha:    " + fecha, 10, y += 18);
-
-            // Tabla de calificaciones 
-            y += 20;
-            y = dibujarTablaCalificaciones(g, cals, y, (int) w);
-            cb.onProgreso(80);
-
-            // Promedio general
-            y += 15;
-            g.setFont(FUENTE_NEGRITA);
-            Color colorProm = promedio >= 6.0 ? COLOR_APROBADO : COLOR_REPROBADO;
-            g.setColor(colorProm);
-            g.drawString(String.format("Promedio General: %.2f  (%s)",
-                    promedio, promedio >= 6.0 ? "APROBADO" : "REPROBADO"), 10, y);
-
-            // Pie de página
-            dibujarPie(g, w, (int) pageFormat.getImageableHeight());
-
-            return Printable.PAGE_EXISTS;
-        }, pf);
-
-        // Redirigir salida a archivo PDF 
-        guardarComoPDF(pj, pf, ruta);
-    }
-
-    private static void renderHistorial(Alumno alumno,
-            List<Calificacion> historial,
-            double promedio,
-            long aprobadas,
-            long reprobadas,
-            String fecha,
-            String ruta,
-            ProgresoCallback cb) throws Exception {
-        PrinterJob pj = PrinterJob.getPrinterJob();
-        PageFormat pf = pj.defaultPage();
-        pf.setOrientation(PageFormat.PORTRAIT);
-
-        pj.setPrintable((graphics, pageFormat, pageIndex) -> {
-            if (pageIndex > 0) {
-                return Printable.NO_SUCH_PAGE;
-            }//Fin if 
-
-            Graphics2D g = (Graphics2D) graphics;
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
-
-            double ox = pageFormat.getImageableX();
-            double oy = pageFormat.getImageableY();
-            double w = pageFormat.getImageableWidth();
-            g.translate(ox, oy);
-
-            int y = 0;
-
-            y = dibujarEncabezado(g, w, y, "HISTORIAL ACADÉMICO — KARDEX");
-            cb.onProgreso(50);
-
-            y += 20;
-            g.setFont(FUENTE_NEGRITA);
-            g.setColor(Color.DARK_GRAY);
-            g.drawString("Alumno:     " + alumno.getNombre(), 10, y += 18);
-            g.drawString("Matrícula:  " + alumno.getMatricula(), 10, y += 18);
-            g.drawString("Correo:     " + alumno.getCorreo(), 10, y += 18);
-            g.drawString("Fecha:      " + fecha, 10, y += 18);
-
-            // Estadísticas rápidas
-            y += 10;
-            g.setFont(FUENTE_NORMAL);
-            g.setColor(COLOR_APROBADO);
-            g.drawString("Materias aprobadas:  " + aprobadas, 10, y += 18);
-            g.setColor(COLOR_REPROBADO);
-            g.drawString("Materias reprobadas: " + reprobadas, 10, y += 18);
-            g.setColor(Color.DARK_GRAY);
-            g.drawString("Total de materias:     " + historial.size(), 10, y += 18);
-
-            y += 15;
-            y = dibujarTablaCalificaciones(g, historial, y, (int) w);
-            cb.onProgreso(80);
-
-            y += 15;
-            g.setFont(FUENTE_NEGRITA);
-            Color colorProm = promedio >= 6.0 ? COLOR_APROBADO : COLOR_REPROBADO;
-            g.setColor(colorProm);
-            g.drawString(String.format("Promedio Acumulado: %.2f", promedio), 10, y);
-
-            dibujarPie(g, w, (int) pageFormat.getImageableHeight());
-            return Printable.PAGE_EXISTS;
-        }, pf);
-
-        guardarComoPDF(pj, pf, ruta);
-    }
-
-    //  Componentes gráficos reutilizables
-    private static int dibujarEncabezado(Graphics2D g, double w, int y, String titulo) {
-        // Barra de color institucional
-        g.setColor(COLOR_HEADER);
-        g.fillRect(0, y, (int) w, 55);
-
-        g.setColor(Color.WHITE);
-        g.setFont(FUENTE_TITULO);
-        g.drawString("🎓 Instituto Tecnológico de Zacatecas", 10, y + 22);
-        g.setFont(FUENTE_SUBTITULO);
-        g.drawString(titulo, 10, y + 45);
-
-        return y + 60;
-    }
-
-    private static int dibujarTablaCalificaciones(Graphics2D g,
-            List<Calificacion> cals,
-            int y,
-            int w) {
-        String[] encabezados = {"#", "Materia", "Clave", "Calificación", "Estado"};
-        int[] anchos = {25, 160, 70, 80, 80};
-
-        // Encabezado de tabla
-        g.setColor(new Color(52, 73, 94));
-        g.fillRect(0, y, w, 20);
-        g.setColor(Color.WHITE);
-        g.setFont(FUENTE_NEGRITA);
-        int x = 5;
-        for (int i = 0; i < encabezados.length; i++) {
-            g.drawString(encabezados[i], x, y + 14);
-            x += anchos[i];
-        }//Fin for
-        y += 20;
-
-        // Filas
-        g.setFont(FUENTE_TABLA);
-        for (int i = 0; i < cals.size(); i++) {
-            Calificacion c = cals.get(i);
-            boolean par = (i % 2 == 0);
-
-            g.setColor(par ? COLOR_FILA_PAR : Color.WHITE);
-            g.fillRect(0, y, w, 18);
-
-            double val = c.getValor();
-            boolean aprobado = val >= 6.0;
-            g.setColor(Color.DARK_GRAY);
-            x = 5;
-            g.drawString(String.valueOf(i + 1), x, y + 12);
-            x += anchos[0];
-            g.drawString(truncar(c.getMateria().getNombre(), 28), x, y + 12);
-            x += anchos[1];
-            g.drawString(c.getMateria().getClave(), x, y + 12);
-            x += anchos[2];
-
-            // Color de calificación
-            g.setColor(aprobado ? COLOR_APROBADO : COLOR_REPROBADO);
-            g.setFont(FUENTE_NEGRITA);
-            g.drawString(String.format("%.1f", val), x, y + 12);
-            x += anchos[3];
-            g.drawString(aprobado ? "✔ APROBADO" : "✘ REPROBADO", x, y + 12);
-            g.setFont(FUENTE_TABLA);
-            g.setColor(Color.DARK_GRAY);
-
-            y += 18;
-        }//Fin for
-
-        if (cals.isEmpty()) {
-            g.setColor(Color.GRAY);
-            g.setFont(FUENTE_NORMAL);
-            g.drawString("Sin calificaciones registradas.", 10, y + 15);
-            y += 20;
-        }//Fin if 
-
-        return y;
-    }
-
-    private static void dibujarPie(Graphics2D g, double w, int altoPagina) {
-        int y = altoPagina - 30;
-        g.setColor(new Color(189, 195, 199));
-        g.fillRect(0, y, (int) w, 1);
-        g.setFont(FUENTE_NORMAL);
-        g.setColor(Color.GRAY);
-        g.drawString("Documento generado automáticamente por SisGesco"
-                + LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
-                10, y + 15);
-        g.drawString("Firma autorizada: ____________________________", (int) (w - 260), y + 15);
-    }
-
-    //  Guardar como PDF usando Java2D
-    private static void guardarComoPDF(PrinterJob pj,
-            PageFormat pf,
-            String ruta) throws Exception {
-        // Intentamos usar el servicio de impresión de Java para generar PDF
-        // a través del DocFlavor APPLICATION_PDF si está disponible.
-        // Si no hay impresora PDF instalada, generamos un reporte HTML como
-        // alternativa visual equivalente al PDF.
-        try {
-            // Generar un archivo PostScript / PDF usando el stream de Java Print
-            FileOutputStream fos = new FileOutputStream(ruta);
-            javax.print.StreamPrintServiceFactory[] factories
-                    = javax.print.StreamPrintServiceFactory.lookupStreamPrintServiceFactories(
-                            null, "application/postscript");
-
-            if (factories.length > 0) {
-                javax.print.StreamPrintService sps = factories[0].getPrintService(fos);
-                pj.setPrintService(sps);
-                pj.print();
+            if (mapaCal.containsKey(nombre)) {
+                double val    = mapaCal.get(nombre);
+                boolean ok    = val >= MINIMO_APROBATORIO;
+                String clase  = ok ? "aprobado" : "reprobado";
+                String estado = ok ? "✔ Aprobado" : "✘ Reprobado";
+                if (ok) aprobadas++; else reprobadas++;
+                filas.append(String.format(
+                    "<tr class='%s'><td>%d</td><td>%s</td><td>%s</td><td>%s</td>"
+                    + "<td class='%s'>%.1f</td><td class='%s'>%s</td></tr>\n",
+                    paridad, contador, esc(clave), esc(nombre), esc(horario),
+                    clase, val, clase, estado));
             } else {
-                // Fallback: guardar como HTML con estilos equivalentes al PDF
-                guardarComoHTML(pj, ruta);
-            }//Fin if-else
-            fos.close();
-        } catch (Exception e) {
-            // Si falla la impresión PDF, usar el generador HTML
-            guardarComoHTML(pj, ruta);
-        }//Fin try-catch
+                pendientes++;
+                filas.append(String.format(
+                    "<tr class='%s'><td>%d</td><td>%s</td><td>%s</td><td>%s</td>"
+                    + "<td style='color:#999'>—</td><td style='color:#e67e22'>⏳ Pendiente</td></tr>\n",
+                    paridad, contador, esc(clave), esc(nombre), esc(horario)));
+            }
+            contador++;
+        }
+
+        if (filas.isEmpty()) {
+            filas.append("<tr><td colspan='6' style='text-align:center;color:#999'>"
+                       + "Sin materias inscritas</td></tr>");
+        }
+
+        boolean promedioOk = promedio >= MINIMO_APROBATORIO;
+        String clsPromedio = promedioOk ? "promedio-ok" : "promedio-mal";
+
+        String html = "<!DOCTYPE html>\n<html lang=\"es\">\n<head>\n"
+            + "<meta charset=\"UTF-8\">\n"
+            + "<title>Historial Académico — " + esc(alumno.getNombre()) + "</title>\n"
+            + css()
+            + "</head>\n<body>\n"
+            + "<div class=\"contenedor\">\n"
+            + "  <div class=\"encabezado\" style=\"background:linear-gradient(135deg,#1e8449,#145a32)\">\n"
+            + "    <h1>&#127891; Instituto Tecnológico de Zacatecas</h1>\n"
+            + "    <h2>Historial Académico Completo</h2>\n"
+            + "  </div>\n"
+            + "  <div class=\"cuerpo\">\n"
+            + "    <div class=\"datos\">\n"
+            + "      <p>Alumno: <span>" + esc(alumno.getNombre()) + "</span></p>\n"
+            + "      <p>Matrícula: <span>" + esc(alumno.getMatricula()) + "</span></p>\n"
+            + "      <p>Correo: <span>" + esc(alumno.getCorreo()) + "</span></p>\n"
+            + "      <p>Fecha de emisión: <span>" + fechaHoy + "</span></p>\n"
+            + "    </div>\n"
+            + "    <div class=\"datos\" style=\"background:#eafaf1;border-color:#1e8449;margin-bottom:20px\">\n"
+            + "      <p>Materias inscritas: <span>" + inscritas.size() + "</span></p>\n"
+            + "      <p>Aprobadas: <span class='aprobado'>" + aprobadas + "</span></p>\n"
+            + "      <p>Reprobadas: <span class='reprobado'>" + reprobadas + "</span></p>\n"
+            + "      <p>Pendientes: <span style='color:#e67e22'>" + pendientes + "</span></p>\n"
+            + "    </div>\n"
+            + "    <h3 style=\"margin-bottom:12px;color:#2c3e50;\">&#128218; Historial de Materias</h3>\n"
+            + "    <table>\n"
+            + "      <thead><tr><th>#</th><th>Clave</th><th>Materia</th>"
+            + "<th>Horario</th><th>Calificación</th><th>Estado</th></tr></thead>\n"
+            + "      <tbody>" + filas + "</tbody>\n"
+            + "    </table>\n"
+            + (kardex.isEmpty() ? "" :
+                "    <div class=\"promedio " + clsPromedio + "\">\n"
+              + "      <h3>Promedio General (materias calificadas): "
+              + String.format("%.2f", promedio) + "</h3>\n"
+              + "    </div>\n")
+            + "  </div>\n"
+            + "  <div class=\"pie\">\n"
+            + "    <span>Documento generado automáticamente por SisGesco · " + fechaHoy + "</span>\n"
+            + "    <span>Firma: ________________________</span>\n"
+            + "  </div>\n"
+            + "</div>\n</body>\n</html>\n";
+
+        try (FileWriter fw = new FileWriter(ruta)) {
+            fw.write(html);
+        }
     }
 
-    //Fallback: genera un HTML con diseño equivalente al PDF.
-    private static void guardarComoHTML(PrinterJob pj, String ruta) throws Exception {
-        // Convertir extensión a .html si es necesario
-        String rutaHtml = ruta.replace(".pdf", ".html");
-        // El HTML ya fue generado por el renderer correspondiente
-        // (ver TareaBoletinCalificaciones y TareaHistorialAcademico)
+    // ─── Utilidades ───────────────────────────────────────────────────────────
+
+    /** Retorna la ruta del boletin con fecha: reportes/boletin_A001_20260429.html */
+    public static String rutaBoletin(String matricula) {
+        return "reportes/boletin_" + matricula
+             + "_" + LocalDate.now().format(FMT_ARCHIVO) + ".html";
     }
 
-    // Utilidad: truncar texto largo para que quepa en la tabla
-    private static String truncar(String texto, int maxChars) {
-        if (texto == null) {
-            return "";
-        }//Fin if 
-        return texto.length() <= maxChars ? texto : texto.substring(0, maxChars - 1) + "…";
+    /** Retorna la ruta del historial con fecha: reportes/historial_A001_20260429.html */
+    public static String rutaHistorial(String matricula) {
+        return "reportes/historial_" + matricula
+             + "_" + LocalDate.now().format(FMT_ARCHIVO) + ".html";
     }
-}//Fin de la clase
+
+    /** Escapa caracteres HTML básicos para evitar inyección en el reporte. */
+    private static String esc(String s) {
+        if (s == null) return "";
+        return s.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;");
+    }
+}

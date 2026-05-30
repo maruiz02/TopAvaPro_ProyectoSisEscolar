@@ -1,33 +1,16 @@
 package itz.modelo;
 
-import java.io.Serializable;
+public class Administrador extends Usuario {
 
-public class Administrador implements Serializable {
-
-    //Declaracion de variables
-    private int id;
-    private String nombre;
-    private String correo;
-    private String password;
-
-    //Constructor
-    public Administrador(int id, String nombre, String correo, String password) {
-        this.id = id;
-        this.nombre = nombre;
-        this.correo = correo;
-        this.password = password;
+    public Administrador() {
     }
 
-    // Getters
-    public String getCorreo() {
-        return correo;
-    }
+    public Administrador(int id, String nombre,
+                         String apellido, String correo,
+                         String password) {
 
-    public String getPassword() {
-        return password;
+        super(id, nombre, apellido,
+              correo, password,
+              "ADMINISTRADOR");
     }
-
-    public String getNombre() {
-        return nombre;
-    }
-}//Fin de la clase
+}

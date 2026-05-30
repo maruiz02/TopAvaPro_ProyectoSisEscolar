@@ -1,234 +1,144 @@
 package itz.reporte;
 
-import itz.modelo.*;
-import java.awt.Window;
-import javax.swing.*;
-import java.io.File;
-import java.util.*;
-import java.util.List;
-import java.util.concurrent.*;
+import itz.modelo.Alumno;
 
+import javax.swing.*;
+import java.awt.Desktop;
+import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+/**
+ * Servicio central de reportes.
+ *
+ * Responsabilidades:
+ *  - Mantiene un ExecutorService con pool de 2 hilos (uno por tipo de reporte).
+ *  - Lanza las tareas Runnable en segundo plano.
+ *  - Actualiza la UI (JProgressBar + JLabel) desde el EDT usando SwingUtilities.invokeLater.
+ *  - Ofrece apertura automática del reporte en el navegador al terminar.
+ */
 public class ServicioReportes {
 
-    // Pool de hilos compartido en toda la aplicación 
-    private static final int NUM_HILOS = 4;
-    private static final ExecutorService threadPool
-            = Executors.newFixedThreadPool(NUM_HILOS);
+    // Pool fijo: máximo 2 reportes corriendo al mismo tiempo (boletin e historial)
+    private final ExecutorService executor = Executors.newFixedThreadPool(2);
 
-    // Carpeta de salida 
-    private static final String CARPETA_REPORTES = "reportes";
+    // ─── Boletín ─────────────────────────────────────────────────────────────
 
-    //Constructor privado: clase de utilerías
-    private ServicioReportes() {
+    /**
+     * Genera el boletín del alumno en un hilo separado.
+     *
+     * @param alumno      Alumno objetivo
+     * @param progressBar Barra a actualizar (puede ser null si no se usa)
+     * @param lblEstado   Label con mensaje de estado (puede ser null)
+     * @param btnOrigen   Botón que disparó la acción; se deshabilita mientras corre
+     */
+    public void generarBoletin(Alumno alumno,
+                                JProgressBar progressBar,
+                                JLabel lblEstado,
+                                JButton btnOrigen) {
+
+        if (btnOrigen != null) btnOrigen.setEnabled(false);
+        resetUI(progressBar, lblEstado, "Iniciando generación de boletín...");
+
+        ProgresoCallback cb = construirCallback(progressBar, lblEstado, btnOrigen, true);
+        executor.submit(new TareaBoletinCalificaciones(alumno, cb));
     }
 
-    //  1. BOLENTÍN DE CALIFICACIONES — un alumno
-    public static void generarBoletinAsync(Alumno alumno, JComponent parent) {
-        JProgressBar barra = crearDialogoProgreso(parent,
-                "Generando boletín de " + alumno.getNombre() + "...");
+    // ─── Historial ────────────────────────────────────────────────────────────
 
-        // SwingWorker: doInBackground() corre en un hilo del pool,
-        // done() corre de vuelta en el EDT de Swing.
-        SwingWorker<File, Integer> worker = new SwingWorker<>() {
+    /**
+     * Genera el historial académico del alumno en un hilo separado.
+     */
+    public void generarHistorial(Alumno alumno,
+                                  JProgressBar progressBar,
+                                  JLabel lblEstado,
+                                  JButton btnOrigen) {
 
-            @Override
-            protected File doInBackground() throws Exception {
-                // Aseguramos que exista la carpeta de salida
-                crearCarpeta();
+        if (btnOrigen != null) btnOrigen.setEnabled(false);
+        resetUI(progressBar, lblEstado, "Iniciando generación de historial...");
 
-                // Creamos la tarea y la enviamos al pool de hilos
-                TareaBoletinCalificaciones tarea
-                        = new TareaBoletinCalificaciones(alumno, CARPETA_REPORTES,
-                                porcentaje -> publish(porcentaje));
+        ProgresoCallback cb = construirCallback(progressBar, lblEstado, btnOrigen, false);
+        executor.submit(new TareaHistorialAcademico(alumno, cb));
+    }
 
-                Future<File> futuro = threadPool.submit(tarea);
+    // ─── Helpers privados ─────────────────────────────────────────────────────
 
-                // Monitoreamos el progreso mientras el hilo trabaja
-                while (!futuro.isDone()) {
-                    Thread.sleep(50);          // chequeo cada 50 ms
+    /**
+     * Crea el callback que actualiza la UI en el EDT y, al llegar al 100%,
+     * vuelve a habilitar el botón y abre el archivo en el navegador.
+     *
+     * @param esBoletin  true = boletín, false = historial (para abrir el archivo correcto)
+     */
+    private ProgresoCallback construirCallback(JProgressBar progressBar,
+                                               JLabel lblEstado,
+                                               JButton btnOrigen,
+                                               boolean esBoletin) {
+        return (porcentaje, mensaje) -> {
+            // SwingUtilities.invokeLater garantiza que los cambios de UI
+            // ocurran en el Event Dispatch Thread, no en el hilo worker.
+            SwingUtilities.invokeLater(() -> {
+
+                if (porcentaje == -1) {
+                    // Error
+                    if (lblEstado   != null) lblEstado.setText("⚠ " + mensaje);
+                    if (progressBar != null) progressBar.setValue(0);
+                    if (btnOrigen   != null) btnOrigen.setEnabled(true);
+                    JOptionPane.showMessageDialog(null, mensaje, "Error al generar reporte",
+                                                  JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
-                return futuro.get();           // resultado: el File del PDF
-            }
 
-            @Override
-            protected void process(List<Integer> porcentajes) {
-                // Este método corre en el EDT: actualiza la UI de forma segura
-                barra.setValue(porcentajes.get(porcentajes.size() - 1));
-            }
+                if (progressBar != null) progressBar.setValue(porcentaje);
+                if (lblEstado   != null) lblEstado.setText(mensaje);
 
-            @Override
-            protected void done() {
-                // Cierra el diálogo de progreso y notifica
-                Window ventana = SwingUtilities.getWindowAncestor(barra);
-                if (ventana != null) {
-                    ventana.dispose();
-                }//Fin if 
-                try {
-                    File pdf = get();
-                    JOptionPane.showMessageDialog(parent,
-                            "✅ Boletín generado:\n" + pdf.getAbsolutePath(),
-                            "Reporte listo", JOptionPane.INFORMATION_MESSAGE);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(parent,
-                            "❌ Error al generar el boletín:\n" + ex.getMessage(),
-                            "Error", JOptionPane.ERROR_MESSAGE);
-                }//Fin try-catch
-            }
-        };
-        worker.execute();
-    }
-
-    // Historial academico (un alumno)
-    public static void generarHistorialAsync(Alumno alumno, JComponent parent) {
-        JProgressBar barra = crearDialogoProgreso(parent,
-                "Generando historial de " + alumno.getNombre() + "...");
-
-        SwingWorker<File, Integer> worker = new SwingWorker<>() {
-
-            @Override
-            protected File doInBackground() throws Exception {
-                crearCarpeta();
-
-                TareaHistorialAcademico tarea
-                        = new TareaHistorialAcademico(alumno, CARPETA_REPORTES,
-                                porcentaje -> publish(porcentaje));
-
-                Future<File> futuro = threadPool.submit(tarea);
-
-                while (!futuro.isDone()) {
-                    Thread.sleep(50);
+                if (porcentaje == 100) {
+                    if (btnOrigen != null) btnOrigen.setEnabled(true);
+                    // Extraer la ruta del mensaje ("...: reportes/xxx.html")
+                    String ruta = mensaje.contains(": ") ? mensaje.split(": ", 2)[1] : "";
+                    abrirReporte(ruta);
                 }
-                return futuro.get();
-            }
-
-            @Override
-            protected void process(List<Integer> porcentajes) {
-                barra.setValue(porcentajes.get(porcentajes.size() - 1));
-            }
-
-            @Override
-            protected void done() {
-                Window ventana = SwingUtilities.getWindowAncestor(barra);
-                if (ventana != null) {
-                    ventana.dispose();
-                }//Fin if 
-                try {
-                    File pdf = get();
-                    JOptionPane.showMessageDialog(parent,
-                            "✅ Historial generado:\n" + pdf.getAbsolutePath(),
-                            "Reporte listo", JOptionPane.INFORMATION_MESSAGE);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(parent,
-                            "❌ Error al generar el historial:\n" + ex.getMessage(),
-                            "Error", JOptionPane.ERROR_MESSAGE);
-                }//Fin try-catch
-            }
+            });
         };
-        worker.execute();
     }
 
-    // Reporte en lote para alumnos (Admin)
-    public static void generarReportesLoteAsync(SistemaEscolar sistema,
-            JComponent parent) {
-        List<Alumno> alumnos = sistema.getAlumnos();
-        if (alumnos.isEmpty()) {
-            JOptionPane.showMessageDialog(parent, "No hay alumnos registrados.");
-            return;
-        }//Fin if 
-
-        JProgressBar barra = crearDialogoProgreso(parent,
-                "Generando reportes de " + alumnos.size() + " alumnos...");
-
-        SwingWorker<List<File>, Integer> worker = new SwingWorker<>() {
-
-            @Override
-            protected List<File> doInBackground() throws Exception {
-                crearCarpeta();
-                List<Future<File>> futuros = new ArrayList<>();
-
-                // Enviar TODAS las tareas al pool de una vez.
-                // El pool decide cuántas corren en paralelo (NUM_HILOS).
-                for (Alumno alumno : alumnos) {
-                    TareaBoletinCalificaciones tarea
-                            = new TareaBoletinCalificaciones(alumno, CARPETA_REPORTES,
-                                    p -> {
-                                    });   // sin progreso individual en lote
-                    futuros.add(threadPool.submit(tarea));
-                }//Fin for 
-
-                // Recolectar resultados conforme van terminando
-                List<File> archivos = new ArrayList<>();
-                int completados = 0;
-                for (Future<File> f : futuros) {
-                    archivos.add(f.get());          // espera si ese hilo aún trabaja
-                    completados++;
-                    publish((completados * 100) / futuros.size());
-                }//Fin for
-                return archivos;
+    /** Resetea la barra y el label al inicio de una nueva tarea. */
+    private void resetUI(JProgressBar progressBar, JLabel lblEstado, String msgInicial) {
+        SwingUtilities.invokeLater(() -> {
+            if (progressBar != null) {
+                progressBar.setValue(0);
+                progressBar.setStringPainted(true);
             }
-
-            @Override
-            protected void process(List<Integer> porcentajes) {
-                barra.setValue(porcentajes.get(porcentajes.size() - 1));
-            }
-
-            @Override
-            protected void done() {
-                Window ventana = SwingUtilities.getWindowAncestor(barra);
-                if (ventana != null) {
-                    ventana.dispose();
-                }//Fin if 
-                try {
-                    List<File> archivos = get();
-                    JOptionPane.showMessageDialog(parent,
-                            "✅ " + archivos.size() + " reportes generados en:\n"
-                            + new File(CARPETA_REPORTES).getAbsolutePath(),
-                            "Reportes listos", JOptionPane.INFORMATION_MESSAGE);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(parent,
-                            "❌ Error en generación por lotes:\n" + ex.getMessage(),
-                            "Error", JOptionPane.ERROR_MESSAGE);
-                }//Fin try-catch
-            }
-        };
-        worker.execute();
+            if (lblEstado != null) lblEstado.setText(msgInicial);
+        });
     }
 
-    //  Utilidades internas
-    //Creando carpeta si no existe
-    private static void crearCarpeta() {
-        new File(CARPETA_REPORTES).mkdirs();
-    }
+    /**
+     * Abre el archivo HTML en el navegador predeterminado del sistema.
+     * Si falla (o el SO no soporta Desktop), muestra un mensaje con la ruta.
+     */
+    private void abrirReporte(String ruta) {
+        if (ruta == null || ruta.isBlank()) return;
+        File archivo = new File(ruta);
+        if (!archivo.exists()) return;
 
-    private static JProgressBar crearDialogoProgreso(JComponent parent, String mensaje) {
-        JProgressBar barra = new JProgressBar(0, 100);
-        barra.setStringPainted(true);
-
-        JPanel panel = new JPanel();
-        panel.add(new JLabel(mensaje));
-        panel.add(barra);
-
-        // Mostramos el panel en un JDialog no modal para no bloquear el EDT
-        JDialog dialogo = new JDialog(
-                SwingUtilities.getWindowAncestor(parent), "Generando PDF...");
-        dialogo.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-        dialogo.setContentPane(panel);
-        dialogo.pack();
-        dialogo.setLocationRelativeTo(parent);
-        dialogo.setVisible(true);
-
-        return barra;
-    }
-
-    //Apagando el pool de hilos
-    public static void apagar() {
-        threadPool.shutdown();
         try {
-            if (!threadPool.awaitTermination(10, TimeUnit.SECONDS)) {
-                threadPool.shutdownNow();
-            }//Fin if
-        } catch (InterruptedException e) {
-            threadPool.shutdownNow();
-        }//Fin try-catch
+            if (Desktop.isDesktopSupported()
+                    && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(archivo.toURI());
+            } else {
+                JOptionPane.showMessageDialog(null,
+                        "Reporte guardado en:\n" + archivo.getAbsolutePath(),
+                        "Reporte generado", JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null,
+                    "Reporte guardado en:\n" + archivo.getAbsolutePath(),
+                    "Reporte generado", JOptionPane.INFORMATION_MESSAGE);
+        }
     }
-}//Fin de la clase
+
+    /** Cierra el pool de hilos. Llamar al cerrar la aplicación. */
+    public void shutdown() {
+        executor.shutdown();
+    }
+}

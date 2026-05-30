@@ -1,34 +1,74 @@
 package itz.modelo;
 
-import java.io.Serializable;
+public class Usuario {
 
-public abstract class Usuario implements Serializable{
-    
-    //Declaracion de variables 
-    private static final long serialVersionUID = 1L;
     protected int id;
     protected String nombre;
+    protected String apellido;
     protected String correo;
     protected String password;
+    protected String tipoUsuario;
 
-    //Constructor
-    public Usuario(int id, String nombre, String correo, String password) {
+    public Usuario() {
+    }
+
+    public Usuario(int id, String nombre, String apellido,
+            String correo, String password,
+            String tipoUsuario) {
+
         this.id = id;
         this.nombre = nombre;
+        this.apellido = apellido;
         this.correo = correo;
         this.password = password;
+        this.tipoUsuario = tipoUsuario;
     }
-    
-    //Getters
-    public String getCorreo() { 
-        return correo; 
+
+    public int getId() {
+        return id;
     }
-    
-    public String getPassword() { 
-        return password; 
+
+    public void setId(int id) {
+        this.id = id;
     }
-    
-    public String getNombre() { 
-        return nombre; 
+
+    public String getNombre() {
+        return nombre;
     }
-}//Fin de la clase
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public String getApellido() {
+        return apellido;
+    }
+
+    public void setApellido(String apellido) {
+        this.apellido = apellido;
+    }
+
+    public String getCorreo() {
+        return correo;
+    }
+
+    public void setCorreo(String correo) {
+        this.correo = correo;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getTipoUsuario() {
+        return tipoUsuario;
+    }
+
+    public void setTipoUsuario(String tipoUsuario) {
+        this.tipoUsuario = tipoUsuario;
+    }
+}

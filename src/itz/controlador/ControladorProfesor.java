@@ -1,214 +1,147 @@
 package itz.controlador;
 
-import itz.modelo.*;
-import itz.util.*;
-import itz.vista.*;
+import itz.dao.CalificacionDAO;
+import itz.dao.ProfesorDAO;
+import itz.modelo.Profesor;
+import itz.util.Dialogos;
+import itz.vista.VentanaLogin;
+import itz.vista.VentanaProfesor;
+
 import javax.swing.table.DefaultTableModel;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 
 public class ControladorProfesor {
 
-    //Declaracion de variables 
     private VentanaProfesor vista;
-    private SistemaEscolar sistema;
     private Profesor profesor;
+    private CalificacionDAO calificacionDAO;
+    private ProfesorDAO profesorDAO;
 
-    public ControladorProfesor(VentanaProfesor vista, SistemaEscolar sistema, Profesor profesor) {
-        this.vista = vista;
-        this.sistema = sistema;
-        this.profesor = profesor;
-        init();
-    }
+    // Materias del profesor: [clave, nombre, dia, hora]
+    // Se guarda para saber qué clave corresponde al índice del combo.
+    private List<Object[]> materiasList;
 
-    private void init() {
-        cargarMateriasCombo();
-        cargarTablaHorario();
-        cargarTablaMisMaterias();
-        cargarTablaAlumnosProfesor();
+    public ControladorProfesor(VentanaProfesor vista, Profesor profesor) {
+        this.vista         = vista;
+        this.profesor      = profesor;
+        this.calificacionDAO = new CalificacionDAO();
+        this.profesorDAO   = new ProfesorDAO();
 
-        vista.addComboListener(e -> cargarAlumnosMateria());
+        // 1. Cargar datos iniciales
+        cargarMisMaterias();
+        cargarHorario();
+        // La tabla de alumnos se carga cuando el profesor elige una materia en el combo
+        actualizarTablaAlumnos();
+
+        // 2. Cuando cambia el combo de materias, refrescar la tabla de alumnos
+        vista.addComboListener(e -> actualizarTablaAlumnos());
+
+        // 3. Botones
         vista.getBtnGuardarCalificacion().addActionListener(e -> guardarCalificacion());
-        vista.getBtnRefrescarAlumnos().addActionListener(e -> cargarTablaAlumnosProfesor());
+        vista.getBtnRefrescarAlumnos().addActionListener(e -> actualizarTablaAlumnos());
         vista.getBtnCerrarSesion().addActionListener(e -> cerrarSesion());
     }
 
-    private void cargarMateriasCombo() {
+    // ─── Cargar materias del profesor ────────────────────────────────────────
+
+    private void cargarMisMaterias() {
+        int profesorId = profesorDAO.obtenerProfesorId(profesor.getId());
+        materiasList   = profesorDAO.obtenerMateriasPorProfesor(profesorId);
+
+        // Llenar combo y tabla "Mis Materias"
         vista.removeAllItemsCombo();
-        for (Materia m : profesor.getMaterias()) {
-            vista.addItemCombo(m.getNombre());
-        }//fin for 
+        DefaultTableModel modeloMaterias = new DefaultTableModel(
+                new String[]{"Clave", "Materia", "Día", "Hora"}, 0);
+
+        for (Object[] fila : materiasList) {
+            // combo muestra "CLAVE - Nombre"
+            vista.addItemCombo(fila[0] + " - " + fila[1]);
+            modeloMaterias.addRow(fila);
+        }
+        vista.setModeloMisMaterias(modeloMaterias);
     }
 
-    private void cargarTablaHorario() {
+    // ─── Horario del profesor ─────────────────────────────────────────────────
+
+    private void cargarHorario() {
         DefaultTableModel modelo = new DefaultTableModel(
-                new String[]{"Clave", "Materia", "Horario"}, 0) {
-            @Override
-            public boolean isCellEditable(int r, int c) {
-                return false;
-            }
-        };
-        for (Materia m : profesor.getMaterias()) {
-            String h = (m.getHorario() != null)
-                    ? m.getHorario().getDia() + " " + m.getHorario().getHora() : "N/A";
-            modelo.addRow(new Object[]{m.getClave(), m.getNombre(), h});
-        }//fin for 
+                new String[]{"Clave", "Materia", "Día", "Hora"}, 0);
+        for (Object[] fila : materiasList) {
+            modelo.addRow(fila);
+        }
         vista.setModeloHorario(modelo);
     }
 
-    private void cargarTablaMisMaterias() {
-        DefaultTableModel modelo = new DefaultTableModel(
-                new String[]{"Materia", "Clave", "Dia", "Hora", "Alumnos inscritos"}, 0) {
-            @Override
-            public boolean isCellEditable(int r, int c) {
-                return false;
-            }
-        };
-        for (Materia m : profesor.getMaterias()) {
-            String dia = (m.getHorario() != null) ? m.getHorario().getDia() : "-";
-            String hora = (m.getHorario() != null) ? m.getHorario().getHora() : "-";
-            int num = m.getAlumnos() != null ? m.getAlumnos().size() : 0;
-            modelo.addRow(new Object[]{m.getNombre(), m.getClave(), dia, hora, num});
-        }//fin for 
-        vista.setModeloMisMaterias(modelo);
-    }
+    // ─── Tabla de alumnos según materia seleccionada en el combo ─────────────
 
-    private void cargarAlumnosMateria() {
+    private void actualizarTablaAlumnos() {
         int idx = vista.getComboMateriasSelectedIndex();
-        if (idx < 0) {
-            return;
-        }//fin if 
+        if (idx < 0 || materiasList.isEmpty()) return;
 
-        Materia seleccionada = profesor.getMaterias().get(idx);
+        String claveMateria = (String) materiasList.get(idx)[0];
+
         DefaultTableModel modelo = new DefaultTableModel(
-                new String[]{"Matricula", "Nombre", "Calificacion Actual"}, 0) {
-            @Override
-            public boolean isCellEditable(int r, int c) {
-                return false;
-            }
-        };
-        for (Alumno a : seleccionada.getAlumnos()) {
-            double cal = obtenerCalificacionAlumno(a, seleccionada);
-            String calStr = cal == -1 ? "Sin calificar" : String.format("%.1f", cal);
-            modelo.addRow(new Object[]{a.getMatricula(), a.getNombre(), calStr});
-        }//fin for 
+                new String[]{"Matricula", "Nombre", "Calificacion (0-100)"}, 0);
+
+        List<Object[]> alumnos = calificacionDAO.obtenerAlumnosPorMateria(claveMateria);
+        for (Object[] fila : alumnos) {
+            modelo.addRow(fila);
+        }
         vista.setModeloAlumnos(modelo);
     }
 
-    private double obtenerCalificacionAlumno(Alumno alumno, Materia materia) {
-        for (Calificacion c : alumno.getKardex().getHistorial()) {
-            if (c.getMateria().getClave().equalsIgnoreCase(materia.getClave())) {
-                return c.getValor();
-            }//fin if
-        }//fin for 
-        return -1;
-    }
-
-    public void cargarTablaAlumnosProfesor() {
-        Map<String, String[]> mapaAlumnos = new LinkedHashMap<>();
-
-        for (Materia m : profesor.getMaterias()) {
-            for (Alumno a : m.getAlumnos()) {
-                String key = a.getMatricula();
-                if (mapaAlumnos.containsKey(key)) {
-                    mapaAlumnos.get(key)[3] += ", " + m.getNombre();
-                } else {
-                    double cal = obtenerCalificacionAlumno(a, m);
-                    String calStr = cal == -1 ? "-" : String.format("%.1f", cal);
-                    mapaAlumnos.put(key, new String[]{
-                        a.getNombre(), a.getMatricula(), a.getCorreo(),
-                        m.getNombre(), calStr
-                    });
-                }//fin if-else
-            }//fin for 
-        }//fin for 
-
-        DefaultTableModel modelo = new DefaultTableModel(
-                new String[]{"Nombre", "Matricula", "Correo", "Materia(s)", "Calificacion"}, 0) {
-            @Override
-            public boolean isCellEditable(int r, int c) {
-                return false;
-            }
-        };
-        for (String[] fila : mapaAlumnos.values()) {
-            modelo.addRow(fila);
-        }//fin for 
-        vista.setModeloAlumnosProfesor(modelo);
-    }
+    // ─── Guardar o actualizar calificacion ───────────────────────────────────
 
     private void guardarCalificacion() {
         int idx = vista.getComboMateriasSelectedIndex();
-        if (idx < 0) {
-            Dialogos.advertencia(vista, "Selecciona una materia primero.", "Sin seleccion");
+        if (idx < 0 || materiasList.isEmpty()) {
+            Dialogos.advertencia(vista, "No hay ninguna materia seleccionada.", "Sin materia");
             return;
-        }//fin if 
+        }
 
-        String matricula = vista.getMatriculaAlumno();
-        String calStr = vista.getCalificacion();
+        String matricula    = vista.getMatriculaAlumno().trim();
+        String califTexto   = vista.getCalificacion().trim();
 
-        if (matricula.isEmpty() || calStr.isEmpty()) {
-            Dialogos.advertencia(vista,
-                    "Ingresa la matricula del alumno y la calificacion.", "Campos vacios");
+        if (matricula.isEmpty() || califTexto.isEmpty()) {
+            Dialogos.advertencia(vista, "Completa todos los campos.", "Campos vacíos");
             return;
-        }//fin if 
+        }
 
-        double calValor;
-        //Manejo de excepciones (calificacion erronea)
+        double valor;
         try {
-            calValor = Double.parseDouble(calStr);
-            if (calValor < 0 || calValor > 100) {
-                Dialogos.advertencia(vista, "La calificacion debe estar entre 0 y 100.", "Valor invalido");
-                return;
-            }//fin if 
-        } catch (NumberFormatException ex) {
-            Dialogos.error(vista, "Calificacion invalida. Usa un numero (ej: 8.5)", "Error de formato");
+            valor = Double.parseDouble(califTexto);
+        } catch (NumberFormatException e) {
+            Dialogos.error(vista, "La calificación debe ser un número (ej: 85.5).", "Error de formato");
             return;
-        }//fin try-catch
+        }
 
-        Materia materia = profesor.getMaterias().get(idx);
-        Alumno alumnoTarget = null;
-        for (Alumno a : materia.getAlumnos()) {
-            if (a.getMatricula().equalsIgnoreCase(matricula)) {
-                alumnoTarget = a;
-                break;
-            }//fin if 
-        }//fin for 
+        if (valor < 0 || valor > 100) {
+            Dialogos.advertencia(vista, "La calificación debe estar entre 0 y 100.", "Valor inválido");
+            return;
+        }
 
-        if (alumnoTarget == null) {
+        String claveMateria = (String) materiasList.get(idx)[0];
+
+        boolean ok = calificacionDAO.guardarOActualizarCalificacion(matricula, claveMateria, valor);
+
+        if (ok) {
+            Dialogos.info(vista, "Calificación guardada correctamente.", "Éxito");
+            vista.limpiarCamposCalificacion();
+            actualizarTablaAlumnos(); // refrescar para mostrar la nota nueva
+        } else {
             Dialogos.error(vista,
-                    "El alumno con matricula \"" + matricula + "\" no esta inscrito en esta materia.",
-                    "No encontrado");
-            return;
-        }//fin if 
-
-        boolean actualizado = false;
-        for (Calificacion c : alumnoTarget.getKardex().getHistorial()) {
-            if (c.getMateria().getClave().equalsIgnoreCase(materia.getClave())) {
-                c.setValor(calValor);
-                actualizado = true;
-                break;
-            }//fin if
-        }//fin for 
-        if (!actualizado) {
-            alumnoTarget.getKardex().agregarCalificacion(new Calificacion(materia, calValor));
-        }//fin if 
-
-        sistema.guardarSistema();
-        cargarAlumnosMateria();
-        cargarTablaAlumnosProfesor();
-        vista.limpiarCamposCalificacion();
-        Dialogos.info(vista,
-                "Calificacion " + calValor + " guardada para " + alumnoTarget.getNombre() + ".",
-                "Guardado");
+                    "No se pudo guardar. Verifica que la matrícula '" + matricula
+                    + "' esté inscrita en esta materia.",
+                    "Error");
+        }
     }
+
+    // ─── Cerrar sesion ────────────────────────────────────────────────────────
 
     private void cerrarSesion() {
-        boolean confirma = Dialogos.confirmar(vista, "¿Deseas cerrar sesion?", "Cerrar Sesion");
-        if (confirma) {
-            VentanaLogin vLogin = new VentanaLogin();
-            new ControladorLogin(vLogin, sistema);
-            vLogin.setVisible(true);
-            vista.dispose();
-        }//fin if 
+        VentanaLogin vLogin = new VentanaLogin();
+        new ControladorLogin(vLogin);
+        vLogin.setVisible(true);
+        vista.dispose();
     }
-}//fin de la clase 
+}
